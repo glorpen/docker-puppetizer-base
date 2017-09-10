@@ -1,0 +1,29 @@
+#!/bin/bash
+
+#
+# Author: Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>
+#
+
+function run_shutdownd()
+{
+	echo "## Running shutdown scripts ##"
+	find /etc/docker-shutdown.d -type f -perm -u+x | sort | while read n;
+	do
+		echo "Executing ${n} ...";
+		
+		"${n}";
+		
+		ret=$?;
+		if [ $ret -ne 0 ];
+		then
+			echo "Running ${n} failed with ${ret}, continuing";
+		fi
+	done
+	
+	echo "All scripts executed, exitting."
+	exit 0;
+}	
+
+trap '{ run_shutdownd; }' TERM INT
+
+while true; do sleep 1s;done

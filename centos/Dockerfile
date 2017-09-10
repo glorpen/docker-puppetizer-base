@@ -9,3 +9,16 @@ RUN yum -y --nogpgcheck install https://yum.puppetlabs.com/puppet5/puppet5-relea
     && rm -rf /etc/puppetlabs/code/environments/production/*
 
 ADD opt /opt/puppetizer/
+
+RUN mkdir -p \
+    /etc/docker-shutdown.d \
+    /opt/puppetlabs/puppet/lib/ruby/site_ruby/facter
+
+ADD facter-env.rb /opt/puppetlabs/puppet/lib/ruby/site_ruby/facter/env.rb
+
+#ssl
+
+ENTRYPOINT ["/opt/puppetizer/bin/apply"]
+CMD ["/opt/puppetizer/bin/puppetizerd"]
+
+#HEALTHCHECK

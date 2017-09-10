@@ -54,10 +54,12 @@ function puppet_apply()
 	puppet_ret=$?
 	set -e
 	
-	if [ $puppet_ret != 2 ];
+	#return $puppet_ret
+	
+	if [ $puppet_ret == 2 ] || [ $puppet_ret == 0 ];
 	then
+		return 0
+	else
 		return 1
 	fi
-	
-	return 0
 }
