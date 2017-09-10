@@ -1,0 +1,93 @@
+#!/bin/bash
+
+#
+# Author: Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>
+#
+
+. /opt/puppetizer/share/common.sh
+
+build_env_path="/etc/puppetlabs/code/environments/build"
+use_puppetdb="n"
+
+# arguments parsing
+while getopts "p:" o; do
+    case "${o}" in
+        p)
+            use_puppetdb="${OPTARG}"
+            shift;;
+        *)
+            exit 1
+            ;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+function cleanup()
+{
+	echo "... cleaning up"
+	
+	# cleanup
+	yum clean all
+	
+	# remove build env
+	rm -rf "${build_env_path}"
+	
+	#TODO: clean puppet cache
+}
+
+function setup_puppetdb()
+{
+	echo "... enabling PuppetDB integration"
+	# enable puppetdb
+	cat << EOF >> /etc/puppetlabs/puppet/puppet.conf
+[main]
+storeconfigs = true
+storeconfigs_backend = puppetdb
+report = false
+reports = puppetdb
+EOF
+	
+	cat << EOF >> /etc/puppetlabs/puppet/puppetdb.conf
+[main]
+server_urls = https://puppetdb:8081
+soft_write_failure = false
+EOF
+	
+	cat << EOF > /etc/puppetlabs/puppet/routes.yaml
+---
+apply:
+  catalog:
+    terminus: compiler
+    cache: puppetdb
+  resource:
+    #terminus: ral
+    cache: puppetdb
+  facts:
+    terminus: facter
+    cache: puppetdb_apply
+EOF
+}
+
+function puppet_build()
+{
+	setup_puppetizer_modules
+	
+	mkdir -p "${build_env_path}"
+	puppet_apply build
+}
+
+
+#
+# main flow
+#
+
+puppet_build
+
+if [ "z${use_puppetdb}" == "zy" ];
+then
+	setup_puppetdb
+else
+	echo "... skipping PuppetDB integration"
+fi
+
+cleanup
