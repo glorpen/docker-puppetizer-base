@@ -77,6 +77,86 @@ apply:
 EOF
 }
 
+function link_vendor_modules()
+{
+	puppetizer_module_name="${1}"
+	find "${puppetizer_sources}/${puppetizer_module_name}/modules" -maxdepth 1 -mindepth 1 -type d | while read vendor_mod;
+	do
+		vendor_mod_name="$(basename ${vendor_mod})"
+		
+		ln -fs "${vendor_mod}" "${puppetizer_vendor_modules}/${vendor_mod_name}"
+	done
+}
+
+function hiera_create_initial()
+{
+	cat << EOF > "${puppet_conf_dir}/hiera.yaml"
+---
+# Hiera 5 Global configuration file
+
+version: 5
+
+hierarchy:
+  - name: Puppetizer runtime data
+    data_hash: yaml_data
+    path: ${puppetizer_var_dir}/hiera/runtime.yaml
+EOF
+}
+
+function hiera_register_puppetizer_module()
+{
+	short_name="${1}"
+	module_name="puppetizer_${short_name}"
+	
+	cat << EOF >> "${puppet_conf_dir}/hiera.yaml"
+  - name: Puppetizer env data for ${module_name}
+    data_hash: yaml_data
+    path: ${puppetizer_sources}/${short_name}/hiera/env-%{environment}.yaml
+  - name: Puppetizer data for ${module_name}
+    data_hash: yaml_data
+    path: ${puppetizer_sources}/${short_name}/hiera/puppetizer.yaml
+EOF
+}
+
+function pupinit_create_initial()
+{
+	echo "" > "${puppetizer_init}"
+}
+
+function pupinit_register_puppetizer_module()
+{
+	short_name="${1}"
+	module_name="puppetizer_${short_name}"
+	
+	echo "include ::${module_name}" >> "${puppetizer_init}"
+}
+
+function link_puppetizer_module()
+{
+	short_name="${1}"
+	module_name="puppetizer_${short_name}"
+	
+	ln -fs "${puppetizer_sources}/${short_name}/code" "${puppetizer_modules}/${module_name}";
+}
+
+function setup_puppetizer_modules()
+{
+	
+	pupinit_create_initial
+	hiera_create_initial
+	
+	find "${puppetizer_sources}" -maxdepth 1 -mindepth 1 -type d | while read n;
+	do
+		short_name="$(basename $n)"
+		
+		link_puppetizer_module "${short_name}"
+		link_vendor_modules "${short_name}"
+		hiera_register_puppetizer_module "${short_name}"
+		pupinit_register_puppetizer_module "${short_name}"
+		
+	done
+}
+
 function puppet_build()
 {
 	setup_puppetizer_modules
@@ -84,7 +164,6 @@ function puppet_build()
 	mkdir -p "${build_env_path}"
 	puppet_apply build
 }
-
 
 #
 # main flow
