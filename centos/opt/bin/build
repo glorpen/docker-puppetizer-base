@@ -6,7 +6,7 @@
 
 . /opt/puppetizer/share/common.sh
 
-build_env_path="/etc/puppetlabs/code/environments/build"
+build_env_path="${puppet_env_dir}/build"
 use_puppetdb="n"
 
 # arguments parsing
@@ -32,14 +32,23 @@ function cleanup()
 	# remove build env
 	rm -rf "${build_env_path}"
 	
-	#TODO: clean puppet cache
+	# clear puppet cache
+	rm -rf /opt/puppetlabs/puppet/cache/{reports,state}/
 }
 
 function setup_puppetdb()
 {
 	echo "... enabling PuppetDB integration"
+	
+	# check if its not already enabled
+	if [ $(grep 'puppetdb' /etc/puppetlabs/puppet/puppet.conf | wc -l) -gt 0 ];
+	then
+		echo "PuppetDB was already enabled before"
+		exit 1
+	fi
+	
 	# enable puppetdb
-	cat << EOF >> /etc/puppetlabs/puppet/puppet.conf
+	cat << EOF >> "${puppet_config_dir}/puppet.conf"
 [main]
 storeconfigs = true
 storeconfigs_backend = puppetdb
@@ -47,13 +56,13 @@ report = false
 reports = puppetdb
 EOF
 	
-	cat << EOF >> /etc/puppetlabs/puppet/puppetdb.conf
+	cat << EOF >> "${puppet_config_dir}/puppetdb.conf"
 [main]
 server_urls = https://puppetdb:8081
 soft_write_failure = false
 EOF
 	
-	cat << EOF > /etc/puppetlabs/puppet/routes.yaml
+	cat << EOF > "${puppet_config_dir}/routes.yaml"
 ---
 apply:
   catalog:
@@ -83,6 +92,8 @@ function puppet_build()
 
 puppet_build
 
+# setup puppetdb after build so there is no
+# orphaned storeconfigs
 if [ "z${use_puppetdb}" == "zy" ];
 then
 	setup_puppetdb

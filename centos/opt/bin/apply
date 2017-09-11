@@ -7,16 +7,10 @@
 . /opt/puppetizer/share/common.sh
 
 echo "Configuring environment..."
+
 # apply puppet manifests and check for exit code
 puppet_apply
-#puppet_ret=$? 
 
-#if [ $puppet_ret == 2 ] || [ $puppet_ret == 0 ];
-#then
-	echo "Initialization done"
-#else
-#	echo "Apply failed"
-#	exit 1
-#fi
+echo "Initialization done"
 
 exec $@

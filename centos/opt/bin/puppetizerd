@@ -26,4 +26,5 @@ function run_shutdownd()
 
 trap '{ run_shutdownd; }' TERM INT
 
-while true; do sleep 1s;done
+# big sleep for sane PID
+while true; do sleep 30d;done
