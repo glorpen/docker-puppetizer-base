@@ -14,7 +14,7 @@ RUN mkdir -p \
     /etc/docker-shutdown.d \
     /opt/puppetlabs/puppet/lib/ruby/site_ruby/facter
 
-ADD facter-env.rb /opt/puppetlabs/puppet/lib/ruby/site_ruby/facter/env.rb
+ADD facts/ /opt/puppetlabs/puppet/lib/ruby/site_ruby/facter/
 
 #ssl
 
