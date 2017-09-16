@@ -26,5 +26,7 @@ function run_shutdownd()
 
 trap '{ run_shutdownd; }' TERM INT
 
-# big sleep for sane PID
-while true; do sleep 30d;done
+echo "Puppetized container is running"
+
+sleep infinity &
+wait
