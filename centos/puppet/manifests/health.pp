@@ -1,13 +1,13 @@
 define puppetizer::health(
-  Optional[String] $shebang = '/bin/bash',
-  String $content
+  Optional[String] $interpreter = '/bin/bash',
+  String $command
 ){
   include ::puppetizer
   
-  if $shebang == undef {
-    $_content = $content
+  if $interpreter == undef {
+    $_content = $command
   } else {
-    $_content = "#!${shebang}\n${content}"
+    $_content = "#!${interpreter}\n${command}"
   }
   
   file { "${::puppetizer::health_scripts_path}/${name}":
