@@ -1,32 +1,53 @@
-#!/bin/bash
+#!/bin/bash -e
 
 #
 # Author: Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>
 #
 
-function run_shutdownd()
+. /opt/puppetizer/share/common.sh
+
+function run_startup()
 {
+	find_scripts "${puppetizer_scripts_dir}" -name '*.init' | run_scripts_sync
+	
+	echo "Configuring environment..."
+	
+	# apply puppet manifests and check for exit code
+	puppet_apply # puppet will start services
+	
+	find_scripts "${puppetizer_scripts_dir}" -name '*.start' | run_scripts_sync
+	
+	touch "${puppetizer_initialized_token}"
+}
+
+function run_shutdown()
+{
+	echo "## Running stop scripts ##"
+	find_scripts "${puppetizer_scripts_dir}" -name '*.stop' | run_scripts_sync
+	echo "## Stopping services ##"
+	find_scripts "${puppetizer_services_dir}" -name '*.stop' | run_scripts_sync
 	echo "## Running shutdown scripts ##"
-	find /etc/docker-shutdown.d -type f -perm -u+x | sort | while read n;
-	do
-		echo "Executing ${n} ...";
-		
-		"${n}";
-		
-		ret=$?;
-		if [ $ret -ne 0 ];
-		then
-			echo "Running ${n} failed with ${ret}, continuing";
-		fi
-	done
+	find_scripts "${puppetizer_scripts_dir}" -name '*.shutdown' | run_scripts_sync
 	
 	echo "All scripts executed, exitting."
 	exit 0;
-}	
+}
 
-trap '{ run_shutdownd; }' TERM INT
+trap '{ run_shutdown; }' TERM INT
+trap '{ puppet_apply || true; }' HUP
+
 
 echo "Puppetized container is running"
 
-sleep infinity &
-wait
+run_startup
+
+if [ "z${1}" != "z" ];
+then
+	# run docker CMD
+	exec $@
+else
+	sleep infinity &
+	while :; do
+		wait || echo "Handled signal $?"
+	done
+fi

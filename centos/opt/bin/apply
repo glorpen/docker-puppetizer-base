@@ -12,5 +12,3 @@ echo "Configuring environment..."
 puppet_apply
 
 echo "Initialization done"
-
-exec $@
