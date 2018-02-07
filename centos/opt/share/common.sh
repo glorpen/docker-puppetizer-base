@@ -4,6 +4,7 @@
 
 set -e
 
+puppetizer_bin="/opt/puppetizer/bin"
 puppetizer_sources="/opt/puppetizer/sources"
 puppetizer_var_dir="/var/opt/puppetizer"
 puppetizer_modules="${puppetizer_var_dir}/modules"
@@ -17,13 +18,13 @@ puppetizer_services_dir="${puppetizer_var_dir}/services"
 puppetizer_scripts_dir="${puppetizer_var_dir}/scripts"
 puppetizer_initialized_token="${puppetizer_var_dir}/initialized"
 
-function puppet_apply()
+puppet_apply()
 {
 	env="${1:-production}"
 	
 	# apply puppet manifests and check for exit code
 	set +e
-	/opt/puppetlabs/bin/puppet apply --detailed-exitcodes --verbose --environment=${env} --modulepath="${puppetizer_modules}:${puppetizer_vendor_modules}" "${puppetizer_init}"
+	"${puppetizer_bin}/puppet" apply --detailed-exitcodes --verbose --environment=${env} --modulepath="${puppetizer_modules}:${puppetizer_vendor_modules}" "${puppetizer_init}"
 	puppet_ret=$?
 	set -e
 	
@@ -37,13 +38,13 @@ function puppet_apply()
 	fi
 }
 
-function find_scripts()
+find_scripts()
 {
 	path="${1}"; shift
 	find "${path}" -type f -perm -u+x $@ | sort
 }
 
-function run_scripts_sync()
+run_scripts_sync()
 {
 	while read n
 	do

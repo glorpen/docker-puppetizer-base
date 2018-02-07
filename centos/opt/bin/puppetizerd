@@ -6,7 +6,7 @@
 
 . /opt/puppetizer/share/common.sh
 
-function run_startup()
+run_startup()
 {
 	find_scripts "${puppetizer_scripts_dir}" -name '*.init' | run_scripts_sync
 	
@@ -20,7 +20,7 @@ function run_startup()
 	touch "${puppetizer_initialized_token}"
 }
 
-function run_shutdown()
+run_shutdown()
 {
 	echo "## Running stop scripts ##"
 	find_scripts "${puppetizer_scripts_dir}" -name '*.stop' | run_scripts_sync

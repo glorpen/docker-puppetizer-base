@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 #
 # Author: Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>
@@ -22,7 +22,7 @@ while getopts "p:" o; do
 done
 shift $(($OPTIND - 1))
 
-function cleanup()
+cleanup()
 {
 	echo "... cleaning up"
 	
@@ -36,7 +36,7 @@ function cleanup()
 	rm -rf /opt/puppetlabs/puppet/cache/{reports,state}/
 }
 
-function setup_puppetdb()
+setup_puppetdb()
 {
 	echo "... enabling PuppetDB integration"
 	
@@ -77,7 +77,7 @@ apply:
 EOF
 }
 
-function link_vendor_modules()
+link_vendor_modules()
 {
 	puppetizer_module_name="${1}"
 	find "${puppetizer_sources}/${puppetizer_module_name}/modules" -maxdepth 1 -mindepth 1 -type d | while read vendor_mod;
@@ -88,7 +88,7 @@ function link_vendor_modules()
 	done
 }
 
-function hiera_create_initial()
+hiera_create_initial()
 {
 	cat << EOF > "${puppet_conf_dir}/hiera.yaml"
 ---
@@ -103,7 +103,7 @@ hierarchy:
 EOF
 }
 
-function hiera_register_puppetizer_module()
+hiera_register_puppetizer_module()
 {
 	short_name="${1}"
 	module_name="puppetizer_${short_name}"
@@ -118,13 +118,13 @@ function hiera_register_puppetizer_module()
 EOF
 }
 
-function pupinit_create_initial()
+pupinit_create_initial()
 {
 	echo "class { ::puppetizer: }" > "${puppetizer_init}"
 	echo "class { ::puppetizer::begin: }->" >> "${puppetizer_init}"
 }
 
-function pupinit_register_puppetizer_module()
+pupinit_register_puppetizer_module()
 {
 	short_name="${1}"
 	module_name="puppetizer_${short_name}"
@@ -132,12 +132,12 @@ function pupinit_register_puppetizer_module()
 	echo "class { ::${module_name}: }->" >> "${puppetizer_init}"
 }
 
-function pupinit_close()
+pupinit_close()
 {
 	echo "class { ::puppetizer::last: }" >> "${puppetizer_init}"
 }
 
-function link_puppetizer_module()
+link_puppetizer_module()
 {
 	short_name="${1}"
 	module_name="puppetizer_${short_name}"
@@ -145,7 +145,7 @@ function link_puppetizer_module()
 	ln -fs "${puppetizer_sources}/${short_name}/code" "${puppetizer_modules}/${module_name}";
 }
 
-function setup_puppetizer_modules()
+setup_puppetizer_modules()
 {
 	
 	pupinit_create_initial
@@ -165,7 +165,7 @@ function setup_puppetizer_modules()
 	pupinit_close
 }
 
-function puppet_build()
+puppet_build()
 {
 	setup_puppetizer_modules
 	
