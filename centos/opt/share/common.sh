@@ -12,10 +12,9 @@ puppetizer_init="/var/opt/puppetizer/init.pp"
 puppet_conf_dir="/etc/puppetlabs/puppet"
 puppet_env_dir="/etc/puppetlabs/code/environments"
 
-puppetizer_conf_dir="/etc/puppetizer.d"
-puppetizer_health_dir="${puppetizer_conf_dir}/health"
-puppetizer_services_dir="${puppetizer_conf_dir}/services"
-puppetizer_scripts_dir="${puppetizer_conf_dir}/scripts"
+puppetizer_health_dir="${puppetizer_var_dir}/health"
+puppetizer_services_dir="${puppetizer_var_dir}/services"
+puppetizer_scripts_dir="${puppetizer_var_dir}/scripts"
 puppetizer_initialized_token="${puppetizer_var_dir}/initialized"
 
 function puppet_apply()

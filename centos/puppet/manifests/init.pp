@@ -3,9 +3,9 @@ class puppetizer {
   #$running = $::facts['puppetizer']['running']
   #$building = $::facts['puppetizer']['building']
   
-  $puppetizer_conf = '/etc/puppetizer.d'
-  $health_scripts_path = "${puppetizer_conf}/health"
-  $service_scripts_path = "${puppetizer_conf}/services"
+  $puppetizer_var = '/var/opt/puppetizer'
+  $health_scripts_path = "${puppetizer_var}/health"
+  $service_scripts_path = "${puppetizer_var}/services"
   
   file { [$health_scripts_path, $service_scripts_path]:
     ensure => directory,

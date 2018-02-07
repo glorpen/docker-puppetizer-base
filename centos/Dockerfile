@@ -3,7 +3,10 @@ LABEL maintainer="Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>"
 
 ADD opt /opt/puppetizer/
 
-RUN /bin/bash /opt/puppetizer/share/provision.sh
+ARG BOLT=no
+ARG PUPPETDB=no
+
+RUN /bin/bash /opt/puppetizer/share/provision.sh bolt=$BOLT puppetdb=$PUPPETDB
 ADD puppet /var/opt/puppetizer/vendor/puppetizer
 
 #ssl
