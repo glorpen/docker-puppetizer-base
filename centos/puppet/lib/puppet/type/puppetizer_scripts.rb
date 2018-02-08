@@ -50,16 +50,16 @@ Puppet::Type.newtype(:puppetizer_scripts) do
         Puppet::Type.type(:file).new(
           :name => "%{target}/%{service}.%{action}" % { service: r[:name], target: scripts_dir, action: action },
           :ensure => :file,
-          :content => "#!/bin/bash -e\n%{cmd}\n" % { cmd: r[action.to_s] },
+          :content => "#!/bin/sh -e\n%{cmd}\n" % { cmd: r[action.to_s] },
           :backup => false,
           :mode => 'a=,u+rx'
         )
       end
       
       restart_cmd = if r[:restart] == nil
-        "#!/bin/bash -e\n%{target}/%{service}.stop\n%{target}/%{service}.start\n" % { service: r[:name], target: scripts_dir }
+        "#!/bin/sh -e\n%{target}/%{service}.stop\n%{target}/%{service}.start\n" % { service: r[:name], target: scripts_dir }
       else
-        "#!/bin/bash -e\n%{cmd}\n" % { cmd: r[:restart] }
+        "#!/bin/sh -e\n%{cmd}\n" % { cmd: r[:restart] }
       end
       
       ret << Puppet::Type.type(:file).new(

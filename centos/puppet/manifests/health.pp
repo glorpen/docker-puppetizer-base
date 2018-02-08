@@ -1,5 +1,5 @@
 define puppetizer::health(
-  Optional[String] $interpreter = '/bin/bash',
+  Optional[String] $interpreter = '/bin/sh',
   String $command
 ){
   include ::puppetizer
