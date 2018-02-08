@@ -36,10 +36,16 @@ puppetizer_has_feature(){
 puppet_apply()
 {
 	env="${1:-production}"
+	if [ "x$PUPPETIZER_DEBUG" == "xy" ];
+	then
+		debug_opts="--verbose"
+	else
+		debug_opts="--log_level warning"
+	fi
 	
 	# apply puppet manifests and check for exit code
 	set +e
-	"${puppetizer_bin}/puppet" apply --detailed-exitcodes --verbose --environment=${env} --modulepath="${puppetizer_modules}:${puppetizer_vendor_modules}:${puppet_modules_dir}" "${puppetizer_init}"
+	"${puppetizer_bin}/puppet" apply --detailed-exitcodes $debug_opts --environment=${env} --modulepath="${puppetizer_modules}:${puppetizer_vendor_modules}:${puppet_modules_dir}" "${puppetizer_init}"
 	puppet_ret=$?
 	set -e
 	
