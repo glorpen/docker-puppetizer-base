@@ -190,8 +190,8 @@ cleanup_centos(){
 	$CENTOS_OLD_REPO
 	
 	find /opt/puppetlabs/ -iname "*.a" -delete
-	find /opt/puppetlabs/ -iname "*.so" -type f -exec strip -s {} \;
-	find /opt/puppetlabs/puppet/bin -type f -exec strip -s -v {} 2> /dev/null \;
+	find /opt/puppetlabs/ -iname "*.so" -type f -exec strip -ps {} \;
+	find /opt/puppetlabs/puppet/bin -type f -exec strip -psv {} 2> /dev/null \;
 }
 
 cleanup(){
