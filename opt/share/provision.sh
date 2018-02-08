@@ -6,38 +6,62 @@ set -e
 
 CENTOS_OLD_REPO=/etc/yum.repos.d/temp-centos-old.repo
 
-USE_BOLT=no
-USE_PUPPETDB=no
-SYSTEM=unknown
+USE_PUPPET="yes"
+USE_BOLT="no"
+USE_PUPPETDB="no"
+SYSTEM="unknown"
 
 PUPPETIZER_BIN=/opt/puppetizer/bin
 PUPPETIZER_SHARE=/opt/puppetizer/share
+PUPPETIZER_OS=${PUPPETIZER_SHARE}/os
 
-touch ${PUPPETIZER_SHARE}/features
+save_feature(){
+	key=USE_$(echo "$1" | tr '[:lower:]' '[:upper:]')
+	if [ "$$key" == "yes" ];
+	then
+		echo $1 >> ${PUPPETIZER_SHARE}/features
+	fi
+}
 
-for opt in "$@";
-do
-	key="$(echo "${opt}" | sed -e 's/=.*//')"
-	val="$(echo "${opt}" | sed -e 's/.*=//')"
+prepare_env(){
+	if [ -f "$PUPPETIZER_OS" ];
+	then
+		export SYSTEM="$(cat $PUPPETIZER_OS)"
+	fi
 	
-	case "$key" in
-		bolt|puppetdb)
-			export USE_$(echo "$key" | tr '[:lower:]' '[:upper:]')="$val";
-			if [ "$val" == "yes" ];
-			then
-				echo "$key" > ${PUPPETIZER_SHARE}/features;
-			fi
+	if [ ! -f "${PUPPETIZER_SHARE}/features" ];
+	then
+		touch ${PUPPETIZER_SHARE}/features
+	fi
+	
+	for opt in "$@";
+	do
+		key="$(echo "${opt}" | sed -e 's/=.*//')"
+		val="$(echo "${opt}" | sed -e 's/.*=//')"
+		
+		case "$key" in
+			bolt|puppetdb|puppet)
+				export USE_$(echo "$key" | tr '[:lower:]' '[:upper:]')="$val";
+				;;
+			os)
+				if [ "$SYSTEM" == "unknown" ];
+				then
+					export SYSTEM="$val"
+					echo "${SYSTEM}" > $PUPPETIZER_OS
+				else
+					echo "Operating system type is already set to ${SYSTEM}, ignoring ${val}"
+				fi
+				;;
+			*)
+				echo "Unknown option \"$key\""
+				exit 1;
 			;;
-		os)
-			export SYSTEM="$val";;
-		*)
-			echo "Unknown option \"$key\""
-			exit 1;
-		;;
-	esac
-done
-
-echo "${SYSTEM}" > ${PUPPETIZER_SHARE}/os
+		esac
+	done
+	
+	save_feature puppetdb
+	save_feature bolt
+}
 
 provision_puppet_centos(){
 	# setup CentosOs old repos
@@ -174,7 +198,8 @@ cleanup(){
 	cleanup_${SYSTEM}
 }
 
-provision_puppet
+prepare_env "$@"
+[ "$USE_PUPPET" == "yes" ] && provision_puppet
 [ "$USE_PUPPETDB" == "yes" ] && provision_puppetdb
 [ "$USE_BOLT" == "yes" ] && provision_bolt
 cleanup
