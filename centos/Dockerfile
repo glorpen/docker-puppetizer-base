@@ -6,7 +6,7 @@ ADD opt /opt/puppetizer/
 ARG BOLT=no
 ARG PUPPETDB=no
 
-RUN /bin/sh /opt/puppetizer/share/provision.sh bolt=$BOLT puppetdb=$PUPPETDB system=centos
+RUN /bin/sh /opt/puppetizer/share/provision.sh bolt=$BOLT puppetdb=$PUPPETDB os=centos
 ADD puppet /var/opt/puppetizer/vendor/puppetizer
 
 #ssl

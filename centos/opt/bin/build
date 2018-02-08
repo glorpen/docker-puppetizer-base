@@ -7,27 +7,20 @@
 . /opt/puppetizer/share/common.sh
 
 build_env_path="${puppet_env_dir}/build"
-use_puppetdb="n"
 
-# arguments parsing
-while getopts "p:" o; do
-    case "${o}" in
-        p)
-            use_puppetdb="${OPTARG}"
-            shift;;
-        *)
-            exit 1
-            ;;
-    esac
-done
-shift $(($OPTIND - 1))
+cleanup_alpine(){
+	rm -rf /var/cache/apk/*
+}
+
+cleanup_centos(){
+	yum clean all
+}
 
 cleanup()
 {
 	echo "... cleaning up"
 	
-	# cleanup
-	yum clean all
+	cleanup_${puppetizer_os}
 	
 	# remove build env
 	rm -rf "${build_env_path}"
@@ -181,7 +174,7 @@ puppet_build
 
 # setup puppetdb after build so there is no
 # orphaned storeconfigs
-if [ "z${use_puppetdb}" == "zy" ];
+if puppetizer_has_feature "puppetdb";
 then
 	setup_puppetdb
 else

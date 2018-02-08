@@ -11,6 +11,9 @@ USE_PUPPETDB=no
 SYSTEM=unknown
 
 PUPPETIZER_BIN=/opt/puppetizer/bin
+PUPPETIZER_SHARE=/opt/puppetizer/share
+
+touch ${PUPPETIZER_SHARE}/features
 
 for opt in "$@";
 do
@@ -19,8 +22,13 @@ do
 	
 	case "$key" in
 		bolt|puppetdb)
-			export USE_$(echo "$key" | tr '[:lower:]' '[:upper:]')="$val";;
-		system)
+			export USE_$(echo "$key" | tr '[:lower:]' '[:upper:]')="$val";
+			if [ "$val" == "yes" ];
+			then
+				echo "$key" > ${PUPPETIZER_SHARE}/features;
+			fi
+			;;
+		os)
 			export SYSTEM="$val";;
 		*)
 			echo "Unknown option \"$key\""
@@ -28,6 +36,8 @@ do
 		;;
 	esac
 done
+
+echo "${SYSTEM}" > ${PUPPETIZER_SHARE}/os
 
 provision_puppet_centos(){
 	# setup CentosOs old repos
@@ -57,27 +67,30 @@ provision_puppet_alpine(){
 	FACTER_VERSION="2.5.1"
 	
 	apk add --update \
-      ca-certificates  pciutils \
+      curl ca-certificates  pciutils \
       ruby ruby-irb ruby-rdoc
     echo http://dl-4.alpinelinux.org/alpine/edge/community/ >> /etc/apk/repositories
     apk add --update shadow
-    gem install puppet:"$PUPPET_VERSION" facter:"$FACTER_VERSION"
+    gem install puppet:"$PUPPET_VERSION" facter:"$FACTER_VERSION" --no-ri --no-rdoc
 	#/usr/bin/puppet module install puppetlabs-apk
 	
 	# Workaround for https://tickets.puppetlabs.com/browse/FACT-1351
 	rm /usr/lib/ruby/gems/*/gems/facter-"$FACTER_VERSION"/lib/facter/blockdevices.rb
 	
-	/usr/bin/puppet module install puppetlabs-apk
+	/usr/bin/puppet module install puppetlabs-apk -v 0.2.0
 	mkdir -p /etc/puppetlabs/code/environments/production /etc/puppetlabs/puppet
+	# fix apk module
+	cd /etc/puppetlabs/code/modules/apk/ && curl -L https://github.com/puppetlabs/puppetlabs-apk/pull/4.diff | patch -p1
 	
 	ln -s /usr/bin/puppet "${PUPPETIZER_BIN}/puppet"
 }
 
 provision_puppet(){
+	V=/var/opt/puppetizer
 	# prepare paths for puppetizer
-	mkdir -p /opt/puppetizer/{sources,bin} \
-		/var/opt/puppetizer/{modules,vendor,hiera} \
-		/var/opt/puppetizer/{services,scripts,health}
+	mkdir -p /opt/puppetizer/sources /opt/puppetizer/bin \
+		$V/modules $V/vendor $V/hiera \
+		$V/services $V/scripts $V/health
 	
 	provision_puppet_${SYSTEM}
 	
@@ -87,7 +100,7 @@ provision_puppet(){
 provision_bolt_centos(){
 	# Install Puppet Bolt
 	yum install -y gcc-4.8.5-16.el7 glibc-devel-2.17-196.el7 make libffi-devel -x glibc,glibc-common,libgcc
-	/opt/puppetlabs/puppet/bin/gem install bolt
+	/opt/puppetlabs/puppet/bin/gem install bolt --no-ri --no-rdoc
 	yum remove -y gcc make cpp glibc-devel kernel-headers libgomp mpfr libmpc
 	
 	# fix libffi-devel error when removing
@@ -102,7 +115,7 @@ provision_bolt_centos(){
 
 provision_bolt_alpine(){
 	apk add gcc make ruby-dev libffi-dev musl-dev
-	gem install -N bolt
+	gem install bolt --no-ri --no-rdoc
 	apk del gcc make ruby-dev libffi-dev musl-dev
 	#TODO: check for leftover files
 	
@@ -133,7 +146,8 @@ provision_puppetdb(){
 }
 
 cleanup_alpine(){
-	rm -rf /var/cache/apk/*
+	rm -rf /var/cache/apk/* \
+	/usr/lib/ruby/gems/*/cache
 }
 
 cleanup_centos(){
