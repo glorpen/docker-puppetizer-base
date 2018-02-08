@@ -46,7 +46,12 @@ then
 	# run docker CMD
 	exec $@
 else
-	sleep infinity &
+	if [ $puppetizer_os == 'alpine' ];
+	then
+		( while :; do sleep 365d; done )&
+	else
+		sleep infinity &
+	fi
 	while :; do
 		wait || echo "Handled signal $?"
 	done
