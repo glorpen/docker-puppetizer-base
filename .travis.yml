@@ -1,0 +1,33 @@
+sudo: required
+
+language: bash
+
+services:
+  - docker
+
+env:
+  global:
+    - REPO_NAME=glorpen/puppetizer-base
+    - REPO_TAGS=$(if [ "${TRAVIS_BRANCH}" == "master" ]; then ls *.dockerfile | sed -e 's/.dockerfile/-latest/'; else echo "${TRAVIS_BRANCH}"; fi)
+
+before_install:
+  - bash ci/build.sh
+
+script:
+  - bash ci/test.sh
+
+branches:
+  only:
+    - master
+    - /^alpine-/
+    - /^centos-/
+deploy:
+  - provider: script
+    script: bash ci/push.sh
+    on:
+      tags: true
+      all_branches: true
+  - provider: script
+    script: bash ci/push.sh
+    on:
+      branch: master

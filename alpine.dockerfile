@@ -1,4 +1,4 @@
-FROM alpine:3.4
+FROM alpine:3.7
 LABEL maintainer="Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>"
 
 ADD opt /opt/puppetizer/
