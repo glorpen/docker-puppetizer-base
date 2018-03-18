@@ -2,6 +2,8 @@
 # author: Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>
 #
 
+set -e
+
 REPO_REGEX="$(ls *.dockerfile | cut -d. -f1 | sort -r | sed -e 's@\(.*\)@^\\\\(\1\\\\)-.*$@')"
 
 for tag in ${REPO_TAGS};
