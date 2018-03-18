@@ -9,6 +9,8 @@ env:
   global:
     - REPO_NAME=glorpen/puppetizer-base
     - REPO_TAGS=$(if [ "${TRAVIS_BRANCH}" == "master" ]; then find ./ -maxdepth 1 -name '*.dockerfile' -printf '%f\n' | sort -r | sed -e 's/.dockerfile/-latest/'; else echo "${TRAVIS_BRANCH}"; fi)
+    - secure: "pPKAcix8KnXSQYs3SWuCtSUP1jZMANP805TNcZDs0sYK/JO6T1XEBe09mr3+W38fDr8j4veixu+sQuOjvICBV6tpjpMxLzNe+krmy+kGGRZqlqaN9jTLx9OqlABuW9IU1lUWQb5t3wrosCnha4FrHCKBGjA73vw6dx8l589FMluXZTTDBOqRu4p/5RHb8RPJd6OQsEbQ3uLz54YKL7lAbJpBD7k8+u3daVtq8MhBzwGMRhTN4ORevRG95fCpMw3K/JT2vJu0Ihp3wIlOdTFzy90GvVy4Dkd1YbAw7kaetNBqXBfK7enr6ZDnpAiaKHaa+R7Gbs7l5gb1zLjNplIwuDC0Ll4drRfXOPePfbQAN1F8TdjqY6VpbhhK9UbKGYJj6A/9fbO/N3268XmdRohNPz5r3s+cbSLj7FWi+uGgFWzfca7aNeFw53+BaFmn6Y/P/jrOPh/2rQwGQEvRzeKxIygRC3ZpGlP9AQTSF98oYDrrMa6F/liNEsk9qtykmWZlpvLrEeLlL6bXPAaLVu4hQv8hCqqIfNMk8n22BP9ymZahPQ8LPvfVLTZ0CecQfHVx6GamLePSxLNM27RJZ8Vmh1rFpswtyVMMyIpQ7KhezVDny8iIZWmOowN9Ds4qFuBIm2H5S2nyxl93fgSy6Wv91zEaAABZ6BMf5TGCwvXVy/Q="
+    - secure: "On3rUeycvyopPc3vd91/rGIuEAlo9zd5/3cZ4+6rD55LQKujIPDcSoebHStLQwX4fRDuD3gzMYxPYdyy371uLSI1VEFAYfnYWKF9bNzutuKRWHUpEnCrWzobxP+57Ss0MVSJLlSxQViE8Oq0QipLCpltL9u8AZQ6+27fp8H8cmx1xUe8+Iym1xy8KqvF7EjqwooBCouGnCyNT4uqrFWyQcRCDzjwEqVdQSWbMhNTBaV62LjwLwCgXSb/ZND2INhErQTKnIj7g1VcsvKQFjUrYd+RdhbjYOa4G/oDzdNwSSV86pE8WTrzQRO7GgQFvso6qfk84a7n+NcDVNIQvxhafGIJkEklbYmZREjS5U2Sc/yUZxF3Zcf8k0hGDhz3I8WRjI9XOVcXVSvXkleFlQsAmIiWwlBMctU6N+d7LOVJdHHr7nu2IKvywn4L867TbK6kYsKEUcdVvbgxsWyUhIEJaVi18GPOLp1zPZHkVP1kPh8nxcS7MOUbU3SRyvpZ396V8Bb6L6QHbwttZGycPs3Z8pb9iPnpBHnC/19K3/KAVBHkVKo/zJq3lBUCLl9OHoNAuhryqrs58wQg6p8Yopiz8GfS+Zz8p9zdm3ONS6tQ15yLBWwhzvDXXRZsL+X3Eg5wYjJ9G6vJwu3CtGifcRrCS/t/v5x0SzLJ1W4enSDT8u0="
 
 before_install:
   - bash ci/build.sh
