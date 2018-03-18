@@ -2,7 +2,7 @@ FROM centos:centos7.4.1708
 
 ARG IMAGE_VERSION=centos-latest
 
-LABEL maintainer="Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>"
+LABEL maintainer="Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>" \
       org.label-schema.name="pupetizer-base" \
       org.label-schema.description="Base for puppetizet Docker images" \
       org.label-schema.version=$IMAGE_VERSION \

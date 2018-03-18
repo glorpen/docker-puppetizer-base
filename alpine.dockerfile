@@ -2,7 +2,7 @@ FROM alpine:3.7
 
 ARG IMAGE_VERSION=alpine-latest
 
-LABEL maintainer="Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>"
+LABEL maintainer="Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>" \
       org.label-schema.name="pupetizer-base" \
       org.label-schema.description="Base for puppetizet Docker images" \
       org.label-schema.version=$IMAGE_VERSION \
