@@ -8,7 +8,7 @@ services:
 env:
   global:
     - REPO_NAME=glorpen/puppetizer-base
-    - REPO_TAGS=$(if [ "${TRAVIS_BRANCH}" == "master" ]; then ls *.dockerfile | sed -e 's/.dockerfile/-latest/'; else echo "${TRAVIS_BRANCH}"; fi)
+    - REPO_TAGS=$(if [ "${TRAVIS_BRANCH}" == "master" ]; then find ./ -maxdepth 1 -name '*.dockerfile' -printf '%f\n' | sort -r | sed -e 's/.dockerfile/-latest/'; else echo "${TRAVIS_BRANCH}"; fi)
 
 before_install:
   - bash ci/build.sh
