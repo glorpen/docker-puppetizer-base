@@ -81,14 +81,13 @@ EOF
 	
 	# install puppet repo and puppet agent
 	yum -y install https://yum.puppetlabs.com/puppet5/puppet5-release-el-7.noarch.rpm
-	yum -y install puppet-agent
+	yum -y install puppet-agent-${PUPPET_VERSION}
 	
 	ln -s /opt/puppetlabs/bin/puppet "${PUPPETIZER_BIN}/puppet"
 }
 
 provision_puppet_alpine(){
-	PUPPET_VERSION="5.3.2"
-	FACTER_VERSION="2.5.1"
+	FACTER_VERSION=2.5.1
 	
 	apk add --update \
       curl ca-certificates  pciutils \
@@ -96,7 +95,6 @@ provision_puppet_alpine(){
     echo http://dl-4.alpinelinux.org/alpine/edge/community/ >> /etc/apk/repositories
     apk add --update shadow
     gem install puppet:"$PUPPET_VERSION" facter:"$FACTER_VERSION" --no-ri --no-rdoc
-	#/usr/bin/puppet module install puppetlabs-apk
 	
 	# Workaround for https://tickets.puppetlabs.com/browse/FACT-1351
 	rm /usr/lib/ruby/gems/*/gems/facter-"$FACTER_VERSION"/lib/facter/blockdevices.rb
