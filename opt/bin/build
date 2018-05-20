@@ -158,11 +158,22 @@ setup_puppetizer_modules()
 	pupinit_close
 }
 
+puppet_build_centos(){
+    :
+}
+puppet_build_alpine(){
+    # apk puppet module will not fetch repo definitions by itself
+    /sbin/apk update
+}
+
 puppet_build()
 {
 	setup_puppetizer_modules
 	
 	mkdir -p "${build_env_path}"
+	
+	puppet_build_${puppetizer_os}
+	
 	puppet_apply build
 }
 

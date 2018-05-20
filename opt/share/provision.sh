@@ -91,7 +91,7 @@ provision_puppet_alpine(){
 	
 	apk add --update \
       curl ca-certificates  pciutils \
-      ruby ruby-irb ruby-rdoc
+      ruby ruby-irb ruby-rdoc ruby-augeas
     echo http://dl-4.alpinelinux.org/alpine/edge/community/ >> /etc/apk/repositories
     apk add --update shadow
     gem install puppet:"$PUPPET_VERSION" facter:"$FACTER_VERSION" --no-ri --no-rdoc
