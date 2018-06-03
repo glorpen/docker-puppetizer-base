@@ -18,6 +18,7 @@ run_startup()
 	find_scripts "${puppetizer_scripts_dir}" -name '*.start' | run_scripts_sync
 	
 	touch "${puppetizer_initialized_token}"
+	echo "Container marked as initialized"
 }
 
 run_shutdown()
