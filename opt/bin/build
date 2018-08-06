@@ -30,7 +30,7 @@ cleanup()
 }
 
 setup_puppet(){
-    cat << EOF > "${puppet_config_dir}/puppet.conf"
+    cat << EOF > "${puppet_conf_dir}/puppet.conf"
 [main]
 report = false
 strict = off
@@ -50,19 +50,19 @@ setup_puppetdb()
 	fi
 	
 	# enable puppetdb
-	cat << EOF >> "${puppet_config_dir}/puppet.conf"
+	cat << EOF >> "${puppet_conf_dir}/puppet.conf"
 storeconfigs = true
 storeconfigs_backend = puppetdb
 reports = puppetdb
 EOF
 	
-	cat << EOF >> "${puppet_config_dir}/puppetdb.conf"
+	cat << EOF >> "${puppet_conf_dir}/puppetdb.conf"
 [main]
 server_urls = https://puppetdb:8081
 soft_write_failure = false
 EOF
 	
-	cat << EOF > "${puppet_config_dir}/routes.yaml"
+	cat << EOF > "${puppet_conf_dir}/routes.yaml"
 ---
 apply:
   catalog:
