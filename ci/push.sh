@@ -4,7 +4,9 @@
 
 docker login -u "${DOCKER_USER}" -p "${DOCKER_PASSWORD}"
 
-for tag in ${REPO_TAGS};
+source ci/lib.sh
+
+for tag in $(list_tags_only);
 do
 	name="${REPO_NAME}:${tag}"
 	echo "Pushing ${name}"

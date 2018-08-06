@@ -4,10 +4,9 @@
 
 set -e
 
-REPO_REGEX="$(ls *.dockerfile | cut -d. -f1 | sort -r | sed -e 's@\(.*\)@^\\\\(\1\\\\)-.*$@')"
+source ci/lib.sh
 
-for tag in ${REPO_TAGS};
+for tag_path in $(list_tags);
 do
-	prefix=$(echo "${REPO_REGEX}" | while read n; do echo "${tag}" | sed -n "s/$n/\1/p"; done | head -n1)
-	docker build --build-arg IMAGE_VERSION="${tag}" -t "${REPO_NAME}":"${tag}" -f "${prefix}.dockerfile" .
+	docker build -t "${REPO_NAME}":"$(echo "${tag_path}" | cut -d: -f2)" -f "$(echo "${tag_path}" | cut -d: -f1)" .
 done
