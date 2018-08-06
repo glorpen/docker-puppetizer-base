@@ -38,7 +38,7 @@ puppet_apply()
 	env="${1:-production}"
 	if [ "x$PUPPETIZER_DEBUG" == "xy" ] || [ "x${env}" == "xbuild" ];
 	then
-		debug_opts="--verbose"
+		debug_opts="--verbose --strict=warning"
 	else
 		debug_opts="--log_level warning"
 	fi

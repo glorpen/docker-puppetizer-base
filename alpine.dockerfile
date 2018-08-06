@@ -1,7 +1,7 @@
 FROM alpine:3.7
 
 ARG IMAGE_VERSION=alpine-latest
-ARG PUPPET_VERSION=5.5.1
+ARG PUPPET_VERSION=5.5.3
 
 LABEL maintainer="Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>" \
       org.label-schema.name="pupetizer-base" \

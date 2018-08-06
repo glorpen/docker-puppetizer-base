@@ -29,6 +29,15 @@ cleanup()
 	rm -rf /opt/puppetlabs/puppet/cache/{reports,state}/
 }
 
+setup_puppet(){
+    cat << EOF > "${puppet_config_dir}/puppet.conf"
+[main]
+report = false
+strict = off
+onetime = true
+EOF
+}
+
 setup_puppetdb()
 {
 	echo "... enabling PuppetDB integration"
@@ -42,10 +51,8 @@ setup_puppetdb()
 	
 	# enable puppetdb
 	cat << EOF >> "${puppet_config_dir}/puppet.conf"
-[main]
 storeconfigs = true
 storeconfigs_backend = puppetdb
-report = false
 reports = puppetdb
 EOF
 	
@@ -90,9 +97,9 @@ hiera_create_initial()
 version: 5
 
 hierarchy:
-  - name: Puppetizer runtime data
+  - name: Puppetizer runtime data dir
     data_hash: yaml_data
-    path: ${puppetizer_var_dir}/hiera/runtime.yaml
+    glob: ${puppetizer_var_dir}/hiera/**.yaml
 EOF
 }
 
@@ -168,6 +175,7 @@ puppet_build_alpine(){
 
 puppet_build()
 {
+    setup_puppet
 	setup_puppetizer_modules
 	
 	mkdir -p "${build_env_path}"

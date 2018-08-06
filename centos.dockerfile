@@ -1,7 +1,7 @@
 FROM centos:centos7.4.1708
 
 ARG IMAGE_VERSION=centos-latest
-ARG PUPPET_VERSION=5.5.1
+ARG PUPPET_VERSION=5.5.4
 
 LABEL maintainer="Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>" \
       org.label-schema.name="pupetizer-base" \
