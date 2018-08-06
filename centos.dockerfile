@@ -1,12 +1,10 @@
 FROM centos:centos7.4.1708
 
-ARG IMAGE_VERSION=centos-latest
 ARG PUPPET_VERSION=5.5.4
 
 LABEL maintainer="Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>" \
       org.label-schema.name="pupetizer-base" \
       org.label-schema.description="Base for puppetized Docker images" \
-      org.label-schema.version=$IMAGE_VERSION \
       org.label-schema.vcs-url="https://github.com/glorpen/docker-puppetizer-base" \
       org.label-schema.schema-version="1.0"
 
