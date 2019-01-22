@@ -1,0 +1,39 @@
+FROM {{ source_image }} as base
+
+{% block base %}{% endblock %}
+
+FROM base as dev
+
+RUN mkdir -p "{{ install_dir }}/etc" \
+    && echo -e 'install: --no-document\nupdate: --no-document' >> "{{ install_dir }}/etc/gemrc"
+
+{% block base_dev %}{% endblock %}
+
+{% block prepare_ruby %}{% endblock %}
+{% block prepare_facter %}{% endblock %}
+{% block prepare_puppet %}{% endblock %}
+
+{% block post_prepare %}
+RUN cd /usr/src \
+    && grep -lFr '/etc/puppetlabs' * | while read n; do \
+        sed -i "${n}" -e 's@/etc/puppetlabs@/opt/puppetizer/etc@g' -e 's@/opt/puppetlabs@/opt/puppetizer@g' -e 's@/var/run/puppetlabs@/opt/puppetizer/run@g' -e 's@/var/log/puppetlabs@/opt/puppetizer/log@g'; \
+    done
+{% endblock %}
+
+{% block build_ruby %}{% endblock %}
+{% block build_facter %}{% endblock %}
+{% block build_puppet %}{% endblock %}
+
+{% block post_build %}
+RUN find /opt/puppetizer/ -iname "*.a" -delete \
+    && find /opt/puppetizer/ -iname "*.so" -type f -exec strip -ps {} \; \
+    && find /opt/puppetizer/ \( -name "*.so" -or -perm +0001 \) -type f -exec strip -psv {} 2> /dev/null \;
+
+RUN rm -rf /opt/puppetizer/include /opt/puppetizer/share/man /opt/puppetizer/lib/ruby/gems/*/cache/
+{% endblock %}
+
+FROM base
+
+COPY --from=dev "{{ install_dir }}" "{{ install_dir}}"
+
+RUN ln -s /opt/puppetizer/bin/puppet /usr/local/bin/puppet
