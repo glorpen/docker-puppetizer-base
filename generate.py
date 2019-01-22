@@ -10,7 +10,7 @@ import glorpen.config.fields.version as fields_version
 
 class Config(object):
     
-    _pkg_keys = ('puppet', 'facter', 'ruby', 'leatherman', 'cpp_hocon')
+    _pkg_keys = ('puppet', 'facter', 'ruby', 'leatherman', 'cpp-hocon', 'boost')
     # hiera5 is included in puppet
     
     def __init__(self, conf_path):
@@ -36,9 +36,10 @@ class Config(object):
             "targets": fields_simple.Dict(
                 keys = fields_simple.String(),
                 values = fields_simple.Dict({
-                    "source_image": fields_simple.String(),
+                    "source-image": fields_simple.String(),
                     "system": fields_simple.String(),
                     "puppet-package-version": fields_simple.String(),
+                    "system-packages": fields_simple.List(fields_simple.String())
                 })
             )
         })
@@ -64,9 +65,11 @@ class Config(object):
         
         ret = {
             "puppet_package": pkg,
-            "install_dir": "/opt/puppetizer"
+            "install_dir": "/opt/puppetizer",
+            "system": s["system"],
+            "system_packages": s["system-packages"],
+            "source_image": s["source-image"]
         }
-        ret.update(s)
         return ret
     
     def __hasitem__(self, name):

@@ -18,6 +18,9 @@ RUN wget -O ruby.tar.xz "https://cache.ruby-lang.org/pub/ruby/{{ puppet_package.
     && mkdir -p /usr/src/ruby \
     && tar -xJf ruby.tar.xz -C /usr/src/ruby --strip-components=1 \
     && rm ruby.tar.xz
+
+{% block prepare_ruby_post %}{% endblock %}
+
 {% endblock %}
 
 {% block prepare_facter %}
@@ -27,17 +30,21 @@ RUN wget -O /root/facter.tar.gz "https://github.com/puppetlabs/facter/archive/{{
     && tar -xpf /root/facter.tar.gz -C /usr/src/facter --strip-components=1 \
     && rm /root/facter.tar.gz
 
+{% if "leatherman" not in system_packages %}
 RUN wget -O /root/leatherman.tar.gz "https://github.com/puppetlabs/leatherman/archive/{{ puppet_package.leatherman.version }}.tar.gz" \
     && echo "{{ puppet_package.leatherman.sha256 }} */root/leatherman.tar.gz" | sha256sum -c - \
     && mkdir -p /usr/src/leatherman \
     && tar -xpf /root/leatherman.tar.gz -C /usr/src/leatherman --strip-components=1 \
     && rm /root/leatherman.tar.gz
+{% endif %}
 
-RUN wget -O /root/cpp-hocon.tar.gz "https://github.com/puppetlabs/cpp-hocon/archive/{{ puppet_package.cpp_hocon.version }}.tar.gz" \
-    && echo "{{ puppet_package.cpp_hocon.sha256 }} */root/cpp-hocon.tar.gz" | sha256sum -c - \
+{% if "cpp-hocon" not in system_packages %}
+RUN wget -O /root/cpp-hocon.tar.gz "https://github.com/puppetlabs/cpp-hocon/archive/{{ puppet_package['cpp-hocon']['version'] }}.tar.gz" \
+    && echo "{{ puppet_package['cpp-hocon']['sha256'] }} */root/cpp-hocon.tar.gz" | sha256sum -c - \
     && mkdir -p /usr/src/cpp-hocon \
     && tar -xpf /root/cpp-hocon.tar.gz -C /usr/src/cpp-hocon --strip-components=1 \
     && rm /root/cpp-hocon.tar.gz
+{% endif %}
 
 RUN sed -i /usr/src/facter/cmake/FindCPPHOCON.cmake -e 's/libcpp-hocon.a/libcpp-hocon.so/g' \
     && sed -i /usr/src/facter/lib/gemspec.in -e "s/required_ruby_version.*/required_ruby_version = '>= 1.9.0'/g"
@@ -52,6 +59,8 @@ RUN wget -O /root/puppet.tar.gz "https://github.com/puppetlabs/puppet/archive/{{
 {% endblock %}
 
 {% block post_prepare %}
+# TODO: podać katalogi bo może byc tam też boost
+# TODO: facter - disable blkid ?
 RUN cd /usr/src \
     && grep -lFr '/etc/puppetlabs' * | while read n; do \
         sed -i "${n}" -e 's@/etc/puppetlabs@/opt/puppetizer/etc@g' -e 's@/opt/puppetlabs@/opt/puppetizer@g' -e 's@/var/run/puppetlabs@/opt/puppetizer/run@g' -e 's@/var/log/puppetlabs@/opt/puppetizer/log@g'; \
@@ -61,12 +70,7 @@ RUN cd /usr/src \
 {% block build_ruby %}
 WORKDIR /usr/src/ruby
 
-# https://github.com/docker-library/ruby/issues/196
-# https://bugs.ruby-lang.org/issues/14387#note-13 (patch source)
-# https://bugs.ruby-lang.org/issues/14387#note-16 ("Therefore ncopa's patch looks good for me in general." -- only breaks glibc which doesn't matter here)
-RUN wget -O 'thread-stack-fix.patch' 'https://bugs.ruby-lang.org/attachments/download/7081/0001-thread_pthread.c-make-get_main_stack-portable-on-lin.patch' \
-    && echo '3ab628a51d92fdf0d2b5835e93564857aea73e0c1de00313864a94a6255cb645 *thread-stack-fix.patch' | sha256sum -c - \
-    && patch -p1 -i thread-stack-fix.patch
+{% block build_ruby_pre %}{% endblock %}
 
 RUN set -ex \
     \
@@ -81,7 +85,13 @@ RUN set -ex \
 
 RUN set -ex \
     && autoconf \
-    && gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)" \
+    && gnuArch="$(
+    {%- if system in ["centos", "fedora"] -%}
+        rpm --eval '%{_build}'
+    {%- else -%}
+        dpkg-architecture --query DEB_BUILD_GNU_TYPE
+    {%- endif -%}
+)" \
 # the configure script does not detect isnan/isinf as macros
     && export ac_cv_func_isnan=yes ac_cv_func_isinf=yes \
     && optflags=-Os ./configure \
@@ -109,33 +119,37 @@ RUN cd / \
 
 ENV PATH {{ install_dir }}/bin:$PATH
 
-# remove system ruby just to be sure
-RUN apk del ruby
+{% block build_ruby_post %}{% endblock %}
 
 {% endblock %}
 
 {% block build_facter %}
+
+{% if "leatherman" not in system_packages %}
 WORKDIR /usr/src/leatherman
 
 RUN mkdir release \
     && cd release \
-    && cmake -DCMAKE_CXX_FLAGS="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DLEATHERMAN_ENABLE_TESTING=FALSE -DLEATHERMAN_SHARED=TRUE -DLEATHERMAN_USE_ICU=TRUE -DCMAKE_INSTALL_RPATH="{{ install_dir }}/lib" .. \
+    && cmake -DCMAKE_CXX_FLAGS="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DLEATHERMAN_ENABLE_TESTING=FALSE -DLEATHERMAN_SHARED=TRUE -DLEATHERMAN_USE_ICU=TRUE -DCMAKE_INSTALL_RPATH="{{ install_dir }}/lib" {% block build_facter_leatherman_cmake_options %}{% endblock %} .. \
     && make -j "$(nproc)" \
     && make install
+{% endif %}
 
+{% if "cpp-hocon" not in system_packages %}
 WORKDIR /usr/src/cpp-hocon
 
 RUN mkdir release \
     && cd release \
-    && cmake -DCMAKE_CXX_FLAGS_RELEASE="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DBUILD_SHARED_LIBS=TRUE -DCMAKE_INSTALL_RPATH="{{ install_dir }}/lib" .. \
+    && cmake -DCMAKE_CXX_FLAGS_RELEASE="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DBUILD_SHARED_LIBS=TRUE -DCMAKE_INSTALL_RPATH="{{ install_dir }}/lib" {% block build_facter_cpp_hocon_cmake_options %}{% endblock %} .. \
     && make -j "$(nproc)" \
     && make install
+{% endif %}
 
 WORKDIR /usr/src/facter
 
 RUN mkdir release \
     && cd release \
-    && cmake -DCMAKE_CXX_FLAGS_RELEASE="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DBUILD_SHARED_LIBS=TRUE .. \
+    && cmake -DCMAKE_CXX_FLAGS_RELEASE="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DBUILD_SHARED_LIBS=TRUE {% block build_facter_facter_cmake_options %}{% endblock %} .. \
     && make -j "$(nproc)" \
     && make install
 
@@ -148,6 +162,8 @@ COPY puppet/Gemfile.local /usr/src/puppet/Gemfile.local
 
 RUN grep diff-lcs Gemfile >> Gemfile.local
 
+RUN dnf install -y which
+
 RUN BUNDLE_SILENCE_ROOT_WARNING=1  HIERA_VERSION="{{ puppet_package.hiera.version }}" FACTER_LOCATION="file:///usr/src/facter" \
     /opt/puppetizer/bin/bundle install --system --without=test:development:packaging:documentation:features \
     && ./install.rb --no-rdoc --no-ri \
@@ -155,18 +171,17 @@ RUN BUNDLE_SILENCE_ROOT_WARNING=1  HIERA_VERSION="{{ puppet_package.hiera.versio
 {# && ./install.rb --destdir /opt/puppetizer/ --no-rdoc --no-ri --vardir=/opt/puppetizer/cache --logdir=/var/log/puppetizer/puppet --rundir=/var/run/puppetizer --localedir=/opt/puppetizer/share/locale \
     --configdir={{ install_dir }}/etc/puppetlabs/puppet --codedir={{ install_dir }}/etc/code #}
 
-{% if system == "alpine" %}
-RUN /opt/puppetizer/bin/puppet module install puppetlabs-apk \
-    && cd {{ install_dir }}/etc/code/modules/apk/ \
-    && wget -O - https://github.com/puppetlabs/puppetlabs-apk/pull/4.diff | patch -p1
-{% endif %}
+RUN dnf install -y findutils
+
+{% block build_puppet_post %}
+{% endblock %}
 
 {% endblock %}
 
 {% block post_build %}
 RUN find /opt/puppetizer/ -iname "*.a" -delete \
     && find /opt/puppetizer/ -iname "*.so" -type f -exec strip -ps {} \; \
-    && find /opt/puppetizer/ \( -name "*.so" -or -perm +0001 \) -type f -exec strip -psv {} 2> /dev/null \;
+    && find /opt/puppetizer/ \( -name "*.so" -or -perm +{% if system == "alpine" %}0001{% else %}x{% endif %} \) -type f -exec strip -psv {} 2> /dev/null \;
 
 RUN rm -rf /opt/puppetizer/include /opt/puppetizer/share/man /opt/puppetizer/lib/ruby/gems/*/cache/
 {% endblock %}

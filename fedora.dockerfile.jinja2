@@ -1,0 +1,59 @@
+{% extends "base.dockerfile.jinja2" %}
+
+{% block base %}
+RUN dnf install -y \
+    bzip2 ca-certificates libffi procps-ng libyaml zlib \
+    gdbm readline openssl-libs \
+    libcurl yaml-cpp libblkid \
+    tar xz \
+    boost-program-options boost-locale boost-filesystem boost-date-time boost-regex boost-atomic \
+    {% if "leatherman" in system_packages %}leatherman{% endif %} {% if "cpp-hocon" in system_packages %}cpp-hocon{% endif %} \
+    && dnf clean all \
+    && rm -rfv /var/cache/dnf
+{% endblock %}
+
+{% block base_dev %}
+# ruby
+{# RUN dnf groupinstall -y "Development Tools" #}
+RUN dnf install -y \
+    autoconf \
+    bison \
+    bzip2-devel \
+    ca-certificates \
+    coreutils \
+    libyaml-devel \
+    gcc \
+    gdbm-devel \
+    glib-devel \
+    glibc-devel \
+    libffi-devel \
+    openssl-devel \
+    libxml2-devel \
+    libxslt-devel \
+    kernel-headers \
+    make \
+    ncurses-devel \
+    readline-devel \
+    ruby \
+    libyaml-devel \
+    zlib-devel
+
+# other
+RUN dnf install -y cmake boost-devel gcc-c++ libcurl-devel \
+    wget patch which findutils yaml-cpp-devel \
+    {% if "leatherman" in system_packages %}leatherman-devel{% endif %} {% if "cpp-hocon" in system_packages %}cpp-hocon-devel{% endif %}
+{% endblock %}
+
+{% block build_ruby_post %}
+RUN dnf remove -y ruby
+{% endblock %}
+
+{% block build_facter_leatherman_cmake_options -%}
+-DCMAKE_CXX_FLAGS="-Os -Wno-error=class-memaccess -Wno-error=ignored-qualifiers"
+{%- endblock %}
+{% block build_facter_cpp_hocon_cmake_options -%}
+-DCMAKE_CXX_FLAGS_RELEASE="-Os -Wno-error=catch-value="
+{%- endblock %}
+{% block build_facter_facter_cmake_options -%}
+-DCMAKE_CXX_FLAGS_RELEASE="-Os -Wno-error=catch-value="
+{%- endblock %}

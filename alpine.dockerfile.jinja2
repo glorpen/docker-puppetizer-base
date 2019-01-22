@@ -34,5 +34,25 @@ RUN apk add \
         zlib-dev
 # other
 RUN apk add cmake boost-dev yaml-cpp-dev g++ curl-dev
+{% endblock %}
 
+{% block prepare_ruby_post %}
+# https://github.com/docker-library/ruby/issues/196
+# https://bugs.ruby-lang.org/issues/14387#note-13 (patch source)
+# https://bugs.ruby-lang.org/issues/14387#note-16 ("Therefore ncopa's patch looks good for me in general." -- only breaks glibc which doesn't matter here)
+RUN cd /usr/src/ruby \
+    && wget -O 'thread-stack-fix.patch' 'https://bugs.ruby-lang.org/attachments/download/7081/0001-thread_pthread.c-make-get_main_stack-portable-on-lin.patch' \
+    && echo '3ab628a51d92fdf0d2b5835e93564857aea73e0c1de00313864a94a6255cb645 *thread-stack-fix.patch' | sha256sum -c - \
+    && patch -p1 -i thread-stack-fix.patch
+{% endblock %}
+
+{% block build_puppet_post %}
+RUN /opt/puppetizer/bin/puppet module install puppetlabs-apk \
+    && cd {{ install_dir }}/etc/code/modules/apk/ \
+    && wget -O - https://github.com/puppetlabs/puppetlabs-apk/pull/4.diff | patch -p1
+{% endblock %}
+
+{% block build_ruby_post %}
+# remove system ruby just to be sure
+RUN apk del ruby
 {% endblock %}
