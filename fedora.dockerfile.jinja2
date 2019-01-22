@@ -1,48 +1,52 @@
 {% extends "base.dockerfile.jinja2" %}
 
-{% block base %}
-RUN dnf install -y \
-    bzip2 ca-certificates libffi procps-ng libyaml zlib \
-    gdbm readline openssl-libs \
-    libcurl yaml-cpp libblkid \
-    tar xz \
-    boost-program-options boost-locale boost-filesystem boost-date-time boost-regex boost-atomic \
-    {% if "leatherman" in system_packages %}leatherman{% endif %} {% if "cpp-hocon" in system_packages %}cpp-hocon{% endif %} \
-    && dnf clean all \
-    && rm -rfv /var/cache/dnf
-{% endblock %}
+{% set packages_cmd_install %}dnf install -y{% endset %}
+{% set packages_cmd_clean %}dnf clean all && rm -rfv /var/cache/dnf{% endset %}
 
-{% block base_dev %}
-# ruby
-{# RUN dnf groupinstall -y "Development Tools" #}
-RUN dnf install -y \
-    autoconf \
-    bison \
-    bzip2-devel \
-    ca-certificates \
-    coreutils \
-    libyaml-devel \
-    gcc \
-    gdbm-devel \
-    glib-devel \
-    glibc-devel \
-    libffi-devel \
-    openssl-devel \
-    libxml2-devel \
-    libxslt-devel \
-    kernel-headers \
-    make \
-    ncurses-devel \
-    readline-devel \
-    ruby \
-    libyaml-devel \
-    zlib-devel
+{% set packages_base_boost %}boost-program-options boost-locale boost-filesystem boost-date-time boost-regex boost-atomic boost-log{% endset %}
+{% set packages_base_leatherman %}leatherman{% endset %}
+{% set packages_base_cpp_hocon %}cpp-hocon{% endset %}
+{% set packages_base_yaml_cpp %}yaml-cpp{% endset %}
 
-# other
-RUN dnf install -y cmake boost-devel gcc-c++ libcurl-devel \
-    wget patch which findutils yaml-cpp-devel \
-    {% if "leatherman" in system_packages %}leatherman-devel{% endif %} {% if "cpp-hocon" in system_packages %}cpp-hocon-devel{% endif %}
-{% endblock %}
+{% set packages_base | oneline %}
+bzip2 ca-certificates libffi procps-ng libyaml zlib
+gdbm readline openssl-libs
+libcurl libblkid
+tar xz
+{% endset %}
+
+{% set packages_dev_boost %}boost-devel{% endset %}
+{% set packages_dev_leatherman %}leatherman-devel{% endset %}
+{% set packages_dev_cpp_hocon %}cpp-hocon-devel{% endset %}
+{% set packages_dev_yaml_cpp %}yaml-cpp-devel{% endset %}
+
+{% set packages_dev | oneline %}
+{# ruby #}
+autoconf
+bison
+bzip2-devel
+ca-certificates
+coreutils
+libyaml-devel
+gcc
+gdbm-devel
+glib-devel
+glibc-devel
+libffi-devel
+openssl-devel
+libxml2-devel
+libxslt-devel
+kernel-headers
+make
+ncurses-devel
+readline-devel
+ruby
+libyaml-devel
+zlib-devel
+{# other #}
+cmake gcc-c++ libcurl-devel
+wget patch which findutils
+{% endset %}
 
 {% block build_ruby_post %}
 RUN dnf remove -y ruby

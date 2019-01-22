@@ -10,7 +10,10 @@ sha256:
   cpp-hocon:
     0.2.1:  6ddd08f0ec7915fff2f07385926a137b09f6ff58506a7467fa2c954585479e36
   boost:
-    1.66.0: asd
+    1.69.0: 9a2c2819310839ea373f42d69e733c339b4e9a19deab6bfec448281554aa4dbb
+    1.66.0: bd0df411efd9a585e5a2212275f8762079fed8842264954675a4fddc46cfcf60
+  yaml-cpp:
+    0.6.2: e4d8560e163c3d875fd5d9e5542b5fd5bec810febdcba61481fe5fc4e6b1fd05
 
 #https://puppet.com/docs/puppet/6.1/about_agent.html
 package_sets:
@@ -24,6 +27,7 @@ package_sets:
     leatherman: 1.5.4
     cpp-hocon: 0.2.1
     boost: 1.54.0
+    yaml-cpp: 0.6.2
 
   6.0.5:
     puppet: 6.0.5
@@ -35,6 +39,7 @@ package_sets:
     leatherman: 1.5.4
     cpp-hocon: 0.2.1
     boost: 1.66.0
+    yaml-cpp: 0.6.2
 
   6.1.0:
     puppet:   6.1.0
@@ -46,6 +51,7 @@ package_sets:
     leatherman: 1.5.4
     cpp-hocon: 0.2.1
     boost: 1.66.0
+    yaml-cpp: 0.6.2
 
 targets:
   centos-7:
@@ -60,6 +66,7 @@ targets:
     puppet-package-version: 6.1.0
     system-packages:
       - boost
+      - yaml-cpp
   
   fedora-29:
     source-image: fedora:29
@@ -67,5 +74,4 @@ targets:
     puppet-package-version: 6.1.0
     system-packages:
       - boost
-      - cpp-hocon
-      - leatherman
+      - yaml-cpp

@@ -7,10 +7,15 @@ from glorpen.config import Config as GConfig
 import glorpen.config.loaders as loaders
 import glorpen.config.fields.simple as fields_simple
 import glorpen.config.fields.version as fields_version
+import re
+
+re_line = re.compile("(\s*\n\s*)+")
+def filter_oneline(value):
+    return re_line.sub(" ", value.strip())
 
 class Config(object):
     
-    _pkg_keys = ('puppet', 'facter', 'ruby', 'leatherman', 'cpp-hocon', 'boost')
+    _pkg_keys = ('puppet', 'facter', 'ruby', 'leatherman', 'cpp-hocon', 'boost', 'yaml-cpp')
     # hiera5 is included in puppet
     
     def __init__(self, conf_path):
@@ -82,8 +87,9 @@ class Renderer(object):
         self._root_dir = pathlib.Path(__file__).parent
         
         self.env = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(self._root_dir.as_posix())
+            loader=jinja2.FileSystemLoader(self._root_dir.as_posix()),
         )
+        self.env.filters["oneline"] = filter_oneline
     
     def render(self, name):
         cfg = self.config[name]
