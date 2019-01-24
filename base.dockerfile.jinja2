@@ -200,7 +200,7 @@ WORKDIR /usr/src/facter
 
 RUN mkdir release \
     && cd release \
-    && cmake -DCMAKE_CXX_FLAGS_RELEASE="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DBUILD_SHARED_LIBS=TRUE {% block build_facter_facter_cmake_options %}{% endblock %} .. \
+    && cmake -DWITHOUT_BLKID=TRUE -DCMAKE_CXX_FLAGS_RELEASE="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DBUILD_SHARED_LIBS=TRUE {% block build_facter_facter_cmake_options %}{% endblock %} .. \
     && make -j "$(nproc)" \
     && make install
 
