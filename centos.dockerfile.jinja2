@@ -1,0 +1,84 @@
+{% extends "base.dockerfile.jinja2" %}
+
+{% set packages_cmd_install %}yum install -y{% endset %}
+{% set packages_cmd_clean %}rm -rfv /var/cache/yml{% endset %}
+
+{% set packages_base | oneline %}
+bzip2 ca-certificates libffi procps-ng libyaml zlib
+gdbm readline openssl-libs
+libcurl
+tar xz
+{% endset %}
+
+{% set packages_base_boost %}boost-program-options boost-locale boost-filesystem boost-date-time boost-regex boost-atomic boost-log{% endset %}
+{% set packages_base_leatherman %}leatherman{% endset %}
+{% set packages_base_cpp_hocon %}cpp-hocon{% endset %}
+{% set packages_base_yaml_cpp %}yaml-cpp{% endset %}
+
+{% set packages_dev | oneline %}
+{# ruby #}
+{# RUN yum groupinstall -y "Development Tools" #}
+autoconf
+bison
+bzip2-devel
+ca-certificates
+coreutils
+libyaml-devel
+gcc
+gdbm-devel
+glib2-devel
+glibc-devel
+libffi-devel
+openssl-devel
+libxml2-devel
+libxslt-devel
+kernel-headers
+make
+ncurses-devel
+readline-devel
+ruby
+libyaml-devel
+zlib-devel
+{#
+        autoconf \
+        bison \
+        bzip2-dev \
+        ca-certificates \
+        coreutils \
+        dpkg-dev dpkg \
+        gcc \
+        gdbm-dev \
+        glib-dev \
+        libc-dev \
+        libffi-dev \
+        libressl-dev \
+        libxml2-dev \
+        libxslt-dev \
+        linux-headers \
+        make \
+        ncurses-dev \
+        readline-dev \
+        ruby \
+        yaml-dev \
+        zlib-dev
+#}
+{# other #}
+gcc-c++ libcurl-devel
+wget patch which
+{% endset %}
+
+{% set packages_dev_boost %}boost-devel{% endset %}
+{% set packages_dev_leatherman %}leatherman-devel{% endset %}
+{% set packages_dev_cpp_hocon %}cpp-hocon-devel{% endset %}
+{% set packages_dev_yaml_cpp %}yaml-cpp-devel{% endset %}
+
+{% block dev_prepare_post %}
+{{ super() }}
+RUN {{ packages_cmd_install }} epel-release \
+    && {{ packages_cmd_install }} cmake3 \
+    && ln -s $(find  /usr/bin /bin -name cmake3) /usr/local/bin/cmake
+{% endblock %}
+
+{% block build_ruby_post %}
+RUN yum remove -y ruby
+{% endblock %}

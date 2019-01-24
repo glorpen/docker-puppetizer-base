@@ -13,7 +13,7 @@ FROM base as dev
 RUN mkdir -p "{{ install_dir }}/etc" \
     && echo -e 'install: --no-document\nupdate: --no-document' >> "{{ install_dir }}/etc/gemrc"
 
-{% block base_dev %}
+{% block dev_base %}
 RUN {{ packages_cmd_install }} {{ packages_dev }}
 {%- if "boost" in system_packages %} {{ packages_dev_boost }}{% endif %}
 {%- if "leatherman" in system_packages %} {{ packages_dev_leatherman }}{% endif %}
@@ -21,7 +21,7 @@ RUN {{ packages_cmd_install }} {{ packages_dev }}
 {%- if "yaml-cpp" in system_packages %} {{ packages_dev_yaml_cpp }}{% endif %} && {{ packages_cmd_clean }}
 {% endblock %}
 
-{% block prepare_ruby %}
+{% block dev_prepare_ruby %}
 {# mostly taken from https://github.com/docker-library/ruby #}
 
 RUN wget -O ruby.tar.xz "https://cache.ruby-lang.org/pub/ruby/{{ puppet_package.ruby.version.major }}.{{ puppet_package.ruby.version.minor }}/ruby-{{ puppet_package.ruby.version }}.tar.xz" \
@@ -31,11 +31,11 @@ RUN wget -O ruby.tar.xz "https://cache.ruby-lang.org/pub/ruby/{{ puppet_package.
     && tar -xJf ruby.tar.xz -C /usr/src/ruby --strip-components=1 \
     && rm ruby.tar.xz
 
-{% block prepare_ruby_post %}{% endblock %}
+{% block dev_prepare_ruby_post %}{% endblock %}
 
 {% endblock %}
 
-{% block prepare_facter %}
+{% block dev_prepare_facter %}
 
 {% if "boost" not in system_packages %}
 RUN wget -O /root/boost.tar.gz "https://dl.bintray.com/boostorg/release/{{ puppet_package.boost.version }}/source/boost_{{ puppet_package.boost.version | replace(".", "_") }}.tar.gz" \
@@ -81,7 +81,7 @@ RUN sed -i /usr/src/facter/cmake/FindCPPHOCON.cmake -e 's/libcpp-hocon.a/libcpp-
 
 {% endblock %}
 
-{% block prepare_puppet %}
+{% block dev_prepare_puppet %}
 RUN wget -O /root/puppet.tar.gz "https://github.com/puppetlabs/puppet/archive/{{ puppet_package.puppet.version }}.tar.gz" \
     && echo "{{ puppet_package.puppet.sha256 }} */root/puppet.tar.gz" | sha256sum -c - \
     && mkdir -p /usr/src/puppet \
@@ -89,18 +89,17 @@ RUN wget -O /root/puppet.tar.gz "https://github.com/puppetlabs/puppet/archive/{{
     && rm /root/puppet.tar.gz
 {% endblock %}
 
-{% block post_prepare %}
-# TODO: facter - disable blkid ?
+{% block dev_prepare_post %}
 RUN cd /usr/src \
     && grep -lFr '/etc/puppetlabs' facter puppet | while read n; do \
         sed -i "${n}" -e 's@/etc/puppetlabs@/opt/puppetizer/etc@g' -e 's@/opt/puppetlabs@/opt/puppetizer@g' -e 's@/var/run/puppetlabs@/opt/puppetizer/run@g' -e 's@/var/log/puppetlabs@/opt/puppetizer/log@g'; \
     done
 {% endblock %}
 
-{% block build_ruby %}
+{% block dev_build_ruby %}
 WORKDIR /usr/src/ruby
 
-{% block build_ruby_pre %}{% endblock %}
+{% block dev_build_ruby_pre %}{% endblock %}
 
 RUN set -ex \
     \
@@ -132,16 +131,6 @@ RUN set -ex \
     && make -j "$(nproc)" \
     && make install
 
-{#
-    --with-sitedir=no --with-sitearchdir=no --with-vendordir=no 
-    && runDeps="$( \
-        scanelf --needed --nobanner --format '%n#p' --recursive {{ install_dir }} \
-            | tr ',' '\n' \
-            | sort -u \
-            | awk 'system("[ -e {{ install_dir }}/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
-    )"
-#}
-
 RUN cd / \
     && {{ install_dir }}/bin/gem update --system "{{ puppet_package.ruby_gems.version }}" \
     && {{ install_dir }}/bin/gem install bundler --version "{{ puppet_package.ruby_bundler.version }}" --force \
@@ -149,20 +138,17 @@ RUN cd / \
 
 ENV PATH {{ install_dir }}/bin:$PATH
 
-{% block build_ruby_post %}{% endblock %}
+{% block dev_build_ruby_post %}{% endblock %}
 
 {% endblock %}
 
-{% block build_facter %}
+{% block dev_build_facter %}
 
 {% if "boost" not in system_packages %}
 WORKDIR /usr/src/boost
 
-RUN mkdir release \
-    && cd release \
-    && cmake -DCMAKE_CXX_FLAGS="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DLEATHERMAN_ENABLE_TESTING=FALSE -DLEATHERMAN_SHARED=TRUE -DLEATHERMAN_USE_ICU=TRUE -DCMAKE_INSTALL_RPATH="{{ install_dir }}/lib" {% block build_facter_boost_cmake_options %}{% endblock %} .. \
-    && make -j "$(nproc)" \
-    && make install
+RUN ./bootstrap.sh --prefix={{ install_dir }} --with-toolset=gcc --with-libraries=program_options,locale,filesystem,date_time,regex,atomic,log \
+    && ./b2 toolset=gcc variant=release optimization=space link=shared runtime-link=shared headers install --prefix={{ install_dir }} -j $(nproc)
 {% endif %}
 
 
@@ -206,30 +192,23 @@ RUN mkdir release \
 
 {% endblock %}
 
-{% block build_puppet %}
+{% block dev_build_puppet %}
 WORKDIR /usr/src/puppet
 
 COPY puppet/Gemfile.local /usr/src/puppet/Gemfile.local
 
 RUN grep diff-lcs Gemfile >> Gemfile.local
 
-RUN dnf install -y which
-
 RUN BUNDLE_SILENCE_ROOT_WARNING=1  HIERA_VERSION="{{ puppet_package.hiera.version }}" FACTER_LOCATION="file:///usr/src/facter" \
     /opt/puppetizer/bin/bundle install --system --without=test:development:packaging:documentation:features \
     && ./install.rb --no-rdoc --no-ri \
     && rm -rf /opt/puppetlabs
-{# && ./install.rb --destdir /opt/puppetizer/ --no-rdoc --no-ri --vardir=/opt/puppetizer/cache --logdir=/var/log/puppetizer/puppet --rundir=/var/run/puppetizer --localedir=/opt/puppetizer/share/locale \
-    --configdir={{ install_dir }}/etc/puppetlabs/puppet --codedir={{ install_dir }}/etc/code #}
 
-RUN dnf install -y findutils
-
-{% block build_puppet_post %}
-{% endblock %}
+{% block dev_build_puppet_post %}{% endblock %}
 
 {% endblock %}
 
-{% block post_build %}
+{% block dev_build_post %}
 RUN find /opt/puppetizer/ -iname "*.a" -delete \
     && find /opt/puppetizer/ -iname "*.so" -type f -exec strip -ps {} \; \
     && find /opt/puppetizer/ \( -name "*.so" -or -perm +{% if system == "alpine" %}0001{% else %}x{% endif %} \) -type f -exec strip -psv {} 2> /dev/null \;

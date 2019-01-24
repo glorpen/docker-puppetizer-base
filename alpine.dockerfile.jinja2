@@ -1,42 +1,53 @@
 {% extends "base.dockerfile.jinja2" %}
 
-{% block base %}
-RUN apk add --no-cache \
-    bzip2 ca-certificates libffi procps yaml zlib \
-    libcrypto1.0 gdbm readline libressl \
-    libcurl boost yaml-cpp boost-program_options \
-    tar xz shadow
-{% endblock %}
+{% set packages_cmd_install %}apk add --no-cache{% endset %}
+{% set packages_cmd_clean %}rm -rfv /var/cache/apk/*{% endset %}
 
-{% block base_dev %}
-# ruby
-RUN apk add \
-        autoconf \
-        bison \
-        bzip2-dev \
-        ca-certificates \
-        coreutils \
-        dpkg-dev dpkg \
-        gcc \
-        gdbm-dev \
-        glib-dev \
-        libc-dev \
-        libffi-dev \
-        libressl-dev \
-        libxml2-dev \
-        libxslt-dev \
-        linux-headers \
-        make \
-        ncurses-dev \
-        readline-dev \
-        ruby \
-        yaml-dev \
-        zlib-dev
-# other
-RUN apk add cmake boost-dev yaml-cpp-dev g++ curl-dev
-{% endblock %}
+{% set packages_base_boost %}boost-program_options boost{% endset %}
+{% set packages_base_leatherman %}leatherman{% endset %}
+{% set packages_base_cpp_hocon %}cpp-hocon{% endset %}
+{% set packages_base_yaml_cpp %}yaml-cpp{% endset %}
 
-{% block prepare_ruby_post %}
+{% set packages_base | oneline %}
+bzip2 ca-certificates libffi procps yaml zlib
+libcrypto1.0 gdbm readline libressl
+libcurl
+tar xz shadow
+{% endset %}
+
+{% set packages_dev_boost %}boost-dev{% endset %}
+{% set packages_dev_leatherman %}leatherman-dev{% endset %}
+{% set packages_dev_cpp_hocon %}cpp-hocon-dev{% endset %}
+{% set packages_dev_yaml_cpp %}yaml-cpp-dev{% endset %}
+
+{% set packages_dev | oneline %}
+{# ruby #}
+autoconf
+bison
+bzip2-dev
+ca-certificates
+coreutils
+dpkg-dev dpkg
+gcc
+gdbm-dev
+glib-dev
+libc-dev
+libffi-dev
+libressl-dev
+libxml2-dev
+libxslt-dev
+linux-headers
+make
+ncurses-dev
+readline-dev
+ruby
+yaml-dev
+zlib-dev
+{# other #}
+cmake g++ curl-dev
+{% endset %}
+
+{% block dev_prepare_ruby_post %}
 # https://github.com/docker-library/ruby/issues/196
 # https://bugs.ruby-lang.org/issues/14387#note-13 (patch source)
 # https://bugs.ruby-lang.org/issues/14387#note-16 ("Therefore ncopa's patch looks good for me in general." -- only breaks glibc which doesn't matter here)
@@ -46,13 +57,13 @@ RUN cd /usr/src/ruby \
     && patch -p1 -i thread-stack-fix.patch
 {% endblock %}
 
-{% block build_puppet_post %}
+{% block dev_build_puppet_post %}
 RUN /opt/puppetizer/bin/puppet module install puppetlabs-apk \
     && cd {{ install_dir }}/etc/code/modules/apk/ \
     && wget -O - https://github.com/puppetlabs/puppetlabs-apk/pull/4.diff | patch -p1
 {% endblock %}
 
-{% block build_ruby_post %}
+{% block dev_build_ruby_post %}
 # remove system ruby just to be sure
 RUN apk del ruby
 {% endblock %}
