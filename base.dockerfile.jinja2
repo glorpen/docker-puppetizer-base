@@ -91,9 +91,10 @@ RUN wget -O /root/puppet.tar.gz "https://github.com/puppetlabs/puppet/archive/{{
 
 {% block dev_prepare_post %}
 RUN cd /usr/src \
-    && grep -lFr '/etc/puppetlabs' facter puppet | while read n; do \
+    && grep -lr '/\(etc\|opt\|run\)/puppetlabs' facter puppet | while read n; do \
         sed -i "${n}" -e 's@/etc/puppetlabs@/opt/puppetizer/etc@g' -e 's@/opt/puppetlabs@/opt/puppetizer@g' -e 's@/var/run/puppetlabs@/opt/puppetizer/run@g' -e 's@/var/log/puppetlabs@/opt/puppetizer/log@g'; \
     done
+
 {% endblock %}
 
 {% block dev_build_ruby %}
@@ -189,20 +190,21 @@ RUN mkdir release \
     && cmake -DWITHOUT_BLKID=TRUE -DCMAKE_CXX_FLAGS_RELEASE="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DBUILD_SHARED_LIBS=TRUE {% block build_facter_facter_cmake_options %}{% endblock %} .. \
     && make -j "$(nproc)" \
     && make install
+    
+RUN ln -s release/bin bin \
+    && gem build .gemspec \
+    && gem install facter-*.gem
 
 {% endblock %}
 
 {% block dev_build_puppet %}
 WORKDIR /usr/src/puppet
 
-COPY puppet/Gemfile.local /usr/src/puppet/Gemfile.local
+RUN gem build .gemspec \
+    && gem install diff-lcs hiera:"{{ puppet_package.hiera.version }}" \
+    && gem install puppet-*.gem
 
-RUN grep diff-lcs Gemfile >> Gemfile.local
-
-RUN BUNDLE_SILENCE_ROOT_WARNING=1  HIERA_VERSION="{{ puppet_package.hiera.version }}" FACTER_LOCATION="file:///usr/src/facter" \
-    /opt/puppetizer/bin/bundle install --system --without=test:development:packaging:documentation:features \
-    && ./install.rb --no-rdoc --no-ri \
-    && rm -rf /opt/puppetlabs
+RUN ./install.rb --no-rdoc --no-ri
 
 {% block dev_build_puppet_post %}{% endblock %}
 
