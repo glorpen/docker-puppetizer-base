@@ -1,0 +1,52 @@
+{% extends "base.dockerfile.jinja2" %}
+
+{% set packages_cmd_install %}apt-get update && apt-get install -y --no-install-recommends{% endset %}
+{% set packages_cmd_clean %}rm -rf /var/lib/apt/lists/*{% endset %}
+
+{% set packages_base_boost %}"libboost-program-options*.0" "libboost-locale*.0" "libboost-filesystem*.0" "libboost-date-time*.0" "libboost-regex*.0" "libboost-atomic*.0" "libboost-log*.0"{% endset %}
+{% set packages_base_leatherman %}leatherman{% endset %}
+{% set packages_base_cpp_hocon %}cpp-hocon{% endset %}
+{% set packages_base_yaml_cpp %}libyaml-cpp0.5v5{% endset %}
+
+{% set packages_base | oneline %}
+bzip2 ca-certificates libffi6 procps "libyaml-0-*" zlib1g
+libcrypto++6 libgdbm3 libreadline7 libssl1.1
+libcurl3
+tar xz-utils
+{% endset %}
+
+{% set packages_dev_boost %}libboost-program-options-dev libboost-locale-dev libboost-filesystem-dev libboost-date-time-dev libboost-regex-dev libboost-atomic-dev libboost-log-dev{% endset %}
+{% set packages_dev_leatherman %}leatherman-dev{% endset %}
+{% set packages_dev_cpp_hocon %}cpp-hocon-dev{% endset %}
+{% set packages_dev_yaml_cpp %}libyaml-cpp-dev{% endset %}
+
+{% set packages_dev | oneline %}
+{# ruby #}
+autoconf
+bison
+libbz2-dev 
+ca-certificates
+coreutils
+dpkg-dev dpkg
+gcc
+libgdbm-dev
+libglib2.0-dev
+libffi-dev
+libssl-dev
+libxml2-dev
+libxslt-dev
+make
+ncurses-dev
+libreadline-dev
+ruby
+libyaml-dev
+zlib1g-dev
+{# other #}
+cmake g++ libcurl4-openssl-dev
+wget
+{% endset %}
+
+{% block dev_build_ruby_post %}
+# remove system ruby just to be sure
+RUN apt-get -y remove ruby
+{% endblock %}
