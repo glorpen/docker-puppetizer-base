@@ -1,0 +1,85 @@
+sha256:
+  ruby:
+    2.5.3:  1cc9d0359a8ea35fc6111ec830d12e60168f3b9b305a3c2578357d360fcf306f
+  puppet:
+    6.1.0:  8f917f7fd4825889181ae810b03f5c76718f73fd6d3c2a2cc0475a0ffe70ff9c
+  facter:
+    3.12.2: b6ad08291d69130b4084f8ae6b57ffce0f52ef01f1a80c5a904226146c48d8cb
+  leatherman:
+    1.5.4:  f4b777de15f89ee0f5db99d065ca96290559e91ceadee39671e0f68318c84f97
+  cpp-hocon:
+    0.2.1:  6ddd08f0ec7915fff2f07385926a137b09f6ff58506a7467fa2c954585479e36
+  boost:
+    1.69.0: 9a2c2819310839ea373f42d69e733c339b4e9a19deab6bfec448281554aa4dbb
+    1.66.0: bd0df411efd9a585e5a2212275f8762079fed8842264954675a4fddc46cfcf60
+  yaml-cpp:
+    0.6.2: e4d8560e163c3d875fd5d9e5542b5fd5bec810febdcba61481fe5fc4e6b1fd05
+
+#https://puppet.com/docs/puppet/6.1/about_agent.html
+package_sets:
+  5.5.10:
+    puppet: 5.5.10
+    facter: 3.11.6
+    hiera:  3.4.5
+    ruby:   2.4.5
+    ruby_gems:    2.7.8
+    ruby_bundler: 1.17.3
+    leatherman: 1.5.4
+    cpp-hocon: 0.2.1
+    boost: 1.54.0
+    yaml-cpp: 0.6.2
+
+  6.0.5:
+    puppet: 6.0.5
+    facter: 3.12.3
+    hiera:  3.4.6
+    ruby:   2.5.3
+    ruby_gems:    2.7.8
+    ruby_bundler: 1.17.3
+    leatherman: 1.5.4
+    cpp-hocon: 0.2.1
+    boost: 1.66.0
+    yaml-cpp: 0.6.2
+
+  6.1.0:
+    puppet:   6.1.0
+    facter:   3.12.2
+    hiera:    3.5.0
+    ruby:     2.5.3
+    ruby_gems:    3.0.2
+    ruby_bundler: 1.17.3
+    leatherman: 1.5.4
+    cpp-hocon: 0.2.1
+    boost: 1.66.0
+    yaml-cpp: 0.6.2
+
+targets:
+  centos-7:
+    source-image: centos:7.6.1810
+    system: centos
+    puppet-package-version: 6.1.0
+    system-packages: []
+    
+  alpine-3.8:
+    source-image: alpine:3.8
+    system: alpine
+    puppet-package-version: 6.1.0
+    system-packages:
+      - boost
+      - yaml-cpp
+  
+  fedora-29:
+    source-image: fedora:29
+    system: fedora
+    puppet-package-version: 6.1.0
+    system-packages:
+      - boost
+      - yaml-cpp
+  
+  debian-9.6-slim:
+    source-image: debian:9.6-slim
+    system: debian
+    puppet-package-version: 6.1.0
+    system-packages:
+      - boost
+      - yaml-cpp

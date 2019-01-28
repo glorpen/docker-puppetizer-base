@@ -1,0 +1,63 @@
+{% extends "base.dockerfile.jinja2" %}
+
+{% set packages_cmd_install %}dnf install -y{% endset %}
+{% set packages_cmd_clean %}dnf clean all && rm -rfv /var/cache/dnf{% endset %}
+
+{% set packages_base_boost %}boost-program-options boost-locale boost-filesystem boost-date-time boost-regex boost-atomic boost-log{% endset %}
+{% set packages_base_leatherman %}leatherman{% endset %}
+{% set packages_base_cpp_hocon %}cpp-hocon{% endset %}
+{% set packages_base_yaml_cpp %}yaml-cpp{% endset %}
+
+{% set packages_base | oneline %}
+bzip2 ca-certificates libffi procps-ng libyaml zlib
+gdbm readline openssl-libs
+libcurl
+tar xz
+{% endset %}
+
+{% set packages_dev_boost %}boost-devel{% endset %}
+{% set packages_dev_leatherman %}leatherman-devel{% endset %}
+{% set packages_dev_cpp_hocon %}cpp-hocon-devel{% endset %}
+{% set packages_dev_yaml_cpp %}yaml-cpp-devel{% endset %}
+
+{% set packages_dev | oneline %}
+{# ruby #}
+autoconf
+bison
+bzip2-devel
+ca-certificates
+coreutils
+libyaml-devel
+gcc
+gdbm-devel
+glib-devel
+glibc-devel
+libffi-devel
+openssl-devel
+libxml2-devel
+libxslt-devel
+kernel-headers
+make
+ncurses-devel
+readline-devel
+ruby
+libyaml-devel
+zlib-devel
+{# other #}
+cmake gcc-c++ libcurl-devel
+wget patch which findutils
+{% endset %}
+
+{% block build_ruby_post %}
+RUN dnf remove -y ruby
+{% endblock %}
+
+{% block build_facter_leatherman_cmake_options -%}
+-DCMAKE_CXX_FLAGS="-Os -Wno-error=class-memaccess -Wno-error=ignored-qualifiers"
+{%- endblock %}
+{% block build_facter_cpp_hocon_cmake_options -%}
+-DCMAKE_CXX_FLAGS_RELEASE="-Os -Wno-error=catch-value="
+{%- endblock %}
+{% block build_facter_facter_cmake_options -%}
+-DCMAKE_CXX_FLAGS_RELEASE="-Os -Wno-error=catch-value="
+{%- endblock %}
