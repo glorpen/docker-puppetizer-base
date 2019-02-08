@@ -14,6 +14,8 @@ sha256:
     1.66.0: bd0df411efd9a585e5a2212275f8762079fed8842264954675a4fddc46cfcf60
   yaml-cpp:
     0.6.2: e4d8560e163c3d875fd5d9e5542b5fd5bec810febdcba61481fe5fc4e6b1fd05
+  runit:
+    2.1.2: 6fd0160cb0cf1207de4e66754b6d39750cff14bb0aa66ab49490992c0c47ba18
 
 #https://puppet.com/docs/puppet/6.1/about_agent.html
 package_sets:
@@ -28,6 +30,7 @@ package_sets:
     cpp-hocon: 0.2.1
     boost: 1.54.0
     yaml-cpp: 0.6.2
+    runit: 2.1.2
 
   6.0.5:
     puppet: 6.0.5
@@ -40,6 +43,7 @@ package_sets:
     cpp-hocon: 0.2.1
     boost: 1.66.0
     yaml-cpp: 0.6.2
+    runit: 2.1.2
 
   6.1.0:
     puppet:   6.1.0
@@ -52,6 +56,7 @@ package_sets:
     cpp-hocon: 0.2.1
     boost: 1.66.0
     yaml-cpp: 0.6.2
+    runit: 2.1.2
 
 targets:
   centos-7:

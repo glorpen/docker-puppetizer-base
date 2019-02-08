@@ -72,10 +72,11 @@ wget patch which
 {% set packages_dev_cpp_hocon %}cpp-hocon-devel{% endset %}
 {% set packages_dev_yaml_cpp %}yaml-cpp-devel{% endset %}
 
-{% block dev_prepare_post %}
+{% block dev_base %}
 {{ super() }}
 RUN {{ packages_cmd_install }} epel-release \
     && {{ packages_cmd_install }} cmake3 \
+    && {{ packages_cmd_clean }} \
     && ln -s $(find  /usr/bin /bin -name cmake3) /usr/local/bin/cmake
 {% endblock %}
 

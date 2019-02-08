@@ -13,9 +13,11 @@ re_line = re.compile("(\s*\n\s*)+")
 def filter_oneline(value):
     return re_line.sub(" ", value.strip())
 
+install_dir = "/opt/puppetizer"
+
 class Config(object):
     
-    _pkg_keys = ('puppet', 'facter', 'ruby', 'leatherman', 'cpp-hocon', 'boost', 'yaml-cpp')
+    _pkg_keys = ('puppet', 'facter', 'ruby', 'leatherman', 'cpp-hocon', 'boost', 'yaml-cpp', 'runit')
     # hiera5 is included in puppet
     
     def __init__(self, conf_path):
@@ -70,7 +72,7 @@ class Config(object):
         
         ret = {
             "puppet_package": pkg,
-            "install_dir": "/opt/puppetizer",
+            "install_dir": install_dir,
             "system": s["system"],
             "system_packages": s["system-packages"],
             "source_image": s["source-image"]

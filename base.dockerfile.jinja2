@@ -5,7 +5,8 @@ RUN {{ packages_cmd_install }} {{ packages_base }}
 {%- if "boost" in system_packages %} {{ packages_base_boost }}{% endif %}
 {%- if "leatherman" in system_packages %} {{ packages_base_leatherman }}{% endif %}
 {%- if "cpp-hocon" in system_packages %} {{ packages_base_cpp_hocon }}{% endif %}
-{%- if "yaml-cpp" in system_packages %} {{ packages_base_yaml_cpp }}{% endif %} && {{ packages_cmd_clean }}
+{%- if "yaml-cpp" in system_packages %} {{ packages_base_yaml_cpp }}{% endif -%}
+&& {{ packages_cmd_clean }}
 {% endblock %}
 
 FROM base as dev
@@ -89,6 +90,22 @@ RUN wget -O /root/puppet.tar.gz "https://github.com/puppetlabs/puppet/archive/{{
     && rm /root/puppet.tar.gz
 {% endblock %}
 
+{% block dev_prepare_runit %}
+RUN wget -O /root/runit.tar.gz "http://smarden.org/runit/runit-{{ puppet_package.runit.version }}.tar.gz" \
+    && echo "{{ puppet_package.runit.sha256 }} */root/runit.tar.gz" | sha256sum -c - \
+    && mkdir -p /usr/src/runit \
+    && tar -xpf /root/runit.tar.gz -C /usr/src/runit --strip-components=2 \
+    && rm /root/runit.tar.gz
+
+ADD runit/opt.patch.tpl /usr/src/runit
+
+RUN sed -i /usr/src/runit/src/Makefile -e 's/-static//g' \
+    && sed -i /usr/src/runit/src/conf-cc -e 's/-O./-Os/g' \
+    && cd /usr/src/runit/src \ 
+    && sed -e 's@%INSTALL_DIR%@{{ install_dir }}@g' /usr/src/runit/opt.patch.tpl | patch -p1 \
+    && cd /
+{% endblock %}
+
 {% block dev_prepare_post %}
 RUN cd /usr/src \
     && grep -lr '/\(etc\|opt\|run\)/puppetlabs' facter puppet | while read n; do \
@@ -130,11 +147,12 @@ RUN set -ex \
         --disable-install-doc --disable-install-rdoc --disable-install-capi \
         --enable-shared \
     && make -j "$(nproc)" \
-    && make install
+    && make install \
+    && make distclean
 
 RUN cd / \
     && {{ install_dir }}/bin/gem update --system "{{ puppet_package.ruby_gems.version }}" \
-    && {{ install_dir }}/bin/gem install bundler --version "{{ puppet_package.ruby_bundler.version }}" --force \
+{#-    && {{ install_dir }}/bin/gem install bundler --version "{{ puppet_package.ruby_bundler.version }}" --force \ #}
     && rm -r /root/.gem/
 
 ENV PATH {{ install_dir }}/bin:$PATH
@@ -149,7 +167,8 @@ ENV PATH {{ install_dir }}/bin:$PATH
 WORKDIR /usr/src/boost
 
 RUN ./bootstrap.sh --prefix={{ install_dir }} --with-toolset=gcc --with-libraries=program_options,locale,filesystem,date_time,regex,atomic,log \
-    && ./b2 toolset=gcc variant=release optimization=space link=shared runtime-link=shared headers install --prefix={{ install_dir }} -j $(nproc)
+    && ./b2 toolset=gcc variant=release optimization=space link=shared runtime-link=shared headers install --prefix={{ install_dir }} -j $(nproc) \
+    && ./b2 --clean-all -n
 {% endif %}
 
 
@@ -160,7 +179,8 @@ RUN mkdir release \
     && cd release \
     && cmake -DCMAKE_CXX_FLAGS="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DLEATHERMAN_ENABLE_TESTING=FALSE -DLEATHERMAN_SHARED=TRUE -DLEATHERMAN_USE_ICU=TRUE -DCMAKE_INSTALL_RPATH="{{ install_dir }}/lib" {% block build_facter_leatherman_cmake_options %}{% endblock %} .. \
     && make -j "$(nproc)" \
-    && make install
+    && make install \
+    && make clean
 {% endif %}
 
 {% if "cpp-hocon" not in system_packages %}
@@ -170,7 +190,8 @@ RUN mkdir release \
     && cd release \
     && cmake -DCMAKE_CXX_FLAGS_RELEASE="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DBUILD_SHARED_LIBS=TRUE -DCMAKE_INSTALL_RPATH="{{ install_dir }}/lib" {% block build_facter_cpp_hocon_cmake_options %}{% endblock %} .. \
     && make -j "$(nproc)" \
-    && make install
+    && make install \
+    && make clean
 {% endif %}
 
 {% if "yaml-cpp" not in system_packages %}
@@ -180,20 +201,22 @@ RUN mkdir release \
     && cd release \
     && cmake -DCMAKE_CXX_FLAGS_RELEASE="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DBUILD_SHARED_LIBS=TRUE -DCMAKE_INSTALL_RPATH="{{ install_dir }}/lib" {% block build_facter_yaml_cpp_cmake_options %}{% endblock %} .. \
     && make -j "$(nproc)" \
-    && make install
+    && make install \
+    && make distclean
 {% endif %}
 
 WORKDIR /usr/src/facter
 
 RUN mkdir release \
     && cd release \
-    && cmake -DWITHOUT_BLKID=TRUE -DCMAKE_CXX_FLAGS_RELEASE="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DBUILD_SHARED_LIBS=TRUE {% block build_facter_facter_cmake_options %}{% endblock %} .. \
-    && make -j "$(nproc)" \
-    && make install
+    && cmake -DWITHOUT_BLKID=TRUE -DCMAKE_CXX_FLAGS_RELEASE="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DBUILD_SHARED_LIBS=TRUE {% block build_facter_facter_cmake_options %}{% endblock %} ..
     
-RUN ln -s release/bin bin \
+RUN make -C release -j "$(nproc)" \
+    && make -C release install \
+    && ln -s release/bin bin \
     && gem build .gemspec \
-    && gem install facter-*.gem
+    && gem install facter-*.gem \
+    && make -C release clean
 
 {% endblock %}
 
@@ -210,6 +233,15 @@ RUN ./install.rb --no-rdoc --no-ri
 
 {% endblock %}
 
+{% block dev_build_runit %}
+WORKDIR /usr/src/runit
+
+RUN make -C src/ -j "$(nproc)" \
+    && for i in `cat package/commands`; do install -vs -t "{{ install_dir }}/bin" "src/${i}"; done \
+    && make -C src/ clean
+
+{% endblock%}
+
 {% block dev_build_post %}
 RUN find /opt/puppetizer/ -iname "*.a" -delete \
     && find /opt/puppetizer/ -iname "*.so" -type f -exec strip -ps {} \; \
@@ -223,3 +255,5 @@ FROM base
 COPY --from=dev "{{ install_dir }}" "{{ install_dir}}"
 
 RUN ln -s /opt/puppetizer/bin/puppet /usr/local/bin/puppet
+
+ADD ./puppet /opt/puppetizer/etc/code/modules/puppetizer
