@@ -1,246 +1,22 @@
-FROM {{ source_image }} as base
-
-{% block base %}
-RUN {{ packages_cmd_install }} {{ packages_base }}
-{%- if "boost" in system_packages %} {{ packages_base_boost }}{% endif %}
-{%- if "leatherman" in system_packages %} {{ packages_base_leatherman }}{% endif %}
-{%- if "cpp-hocon" in system_packages %} {{ packages_base_cpp_hocon }}{% endif %}
-{%- if "yaml-cpp" in system_packages %} {{ packages_base_yaml_cpp }}{% endif -%}
-&& {{ packages_cmd_clean }}
-{% endblock %}
+{% include "dockerfile/base.jinja2" %}
 
 FROM base as dev
 
-RUN mkdir -p "{{ install_dir }}/etc" \
-    && echo -e 'install: --no-document\nupdate: --no-document' >> "{{ install_dir }}/etc/gemrc"
+{% include "dockerfile/dev.jinja2" %}
 
-{% block dev_base %}
-RUN {{ packages_cmd_install }} {{ packages_dev }}
-{%- if "boost" in system_packages %} {{ packages_dev_boost }}{% endif %}
-{%- if "leatherman" in system_packages %} {{ packages_dev_leatherman }}{% endif %}
-{%- if "cpp-hocon" in system_packages %} {{ packages_dev_cpp_hocon }}{% endif %}
-{%- if "yaml-cpp" in system_packages %} {{ packages_dev_yaml_cpp }}{% endif %} && {{ packages_cmd_clean }}
-{% endblock %}
+{% include "dockerfile/runit.jinja2" %}
+{% include "dockerfile/ruby.jinja2" %}
+{% include "dockerfile/boost.jinja2" %}
+{% include "dockerfile/yaml-cpp.jinja2" %}
+{% include "dockerfile/leatherman.jinja2" %}
+{% include "dockerfile/cpp-hocon.jinja2" %}
+{% include "dockerfile/facter.jinja2" %}
+{% include "dockerfile/puppet.jinja2" %}
 
-{% block dev_prepare_ruby %}
-{# mostly taken from https://github.com/docker-library/ruby #}
+FROM dev as prepare
 
-RUN wget -O ruby.tar.xz "https://cache.ruby-lang.org/pub/ruby/{{ puppet_package.ruby.version.major }}.{{ puppet_package.ruby.version.minor }}/ruby-{{ puppet_package.ruby.version }}.tar.xz" \
-    && echo "{{ puppet_package.ruby.sha256 }} *ruby.tar.xz" | sha256sum -c - \
-    \
-    && mkdir -p /usr/src/ruby \
-    && tar -xJf ruby.tar.xz -C /usr/src/ruby --strip-components=1 \
-    && rm ruby.tar.xz
-
-{% block dev_prepare_ruby_post %}{% endblock %}
-
-{% endblock %}
-
-{% block dev_prepare_facter %}
-
-{% if "boost" not in system_packages %}
-RUN wget -O /root/boost.tar.gz "https://dl.bintray.com/boostorg/release/{{ puppet_package.boost.version }}/source/boost_{{ puppet_package.boost.version | replace(".", "_") }}.tar.gz" \
-    && echo "{{ puppet_package.boost.sha256 }} */root/boost.tar.gz" | sha256sum -c - \
-    && mkdir -p /usr/src/boost \
-    && tar -xpf /root/boost.tar.gz -C /usr/src/boost --strip-components=1 \
-    && rm /root/boost.tar.gz
-{% endif %}
-
-
-{% if "leatherman" not in system_packages %}
-RUN wget -O /root/leatherman.tar.gz "https://github.com/puppetlabs/leatherman/archive/{{ puppet_package.leatherman.version }}.tar.gz" \
-    && echo "{{ puppet_package.leatherman.sha256 }} */root/leatherman.tar.gz" | sha256sum -c - \
-    && mkdir -p /usr/src/leatherman \
-    && tar -xpf /root/leatherman.tar.gz -C /usr/src/leatherman --strip-components=1 \
-    && rm /root/leatherman.tar.gz
-{% endif %}
-
-{% if "cpp-hocon" not in system_packages %}
-RUN wget -O /root/cpp-hocon.tar.gz "https://github.com/puppetlabs/cpp-hocon/archive/{{ puppet_package['cpp-hocon']['version'] }}.tar.gz" \
-    && echo "{{ puppet_package['cpp-hocon']['sha256'] }} */root/cpp-hocon.tar.gz" | sha256sum -c - \
-    && mkdir -p /usr/src/cpp-hocon \
-    && tar -xpf /root/cpp-hocon.tar.gz -C /usr/src/cpp-hocon --strip-components=1 \
-    && rm /root/cpp-hocon.tar.gz
-{% endif %}
-
-{% if "yaml-cpp" not in system_packages %}
-RUN wget -O /root/yaml-cpp.tar.gz "https://github.com/jbeder/yaml-cpp/archive/yaml-cpp-{{ puppet_package['yaml-cpp']['version'] }}.tar.gz" \
-    && echo "{{ puppet_package['yaml-cpp']['sha256'] }} */root/yaml-cpp.tar.gz" | sha256sum -c - \
-    && mkdir -p /usr/src/yaml-cpp \
-    && tar -xpf /root/yaml-cpp.tar.gz -C /usr/src/yaml-cpp --strip-components=1 \
-    && rm /root/yaml-cpp.tar.gz
-{% endif %}
-
-RUN wget -O /root/facter.tar.gz "https://github.com/puppetlabs/facter/archive/{{ puppet_package.facter.version }}.tar.gz" \
-    && echo "{{ puppet_package.facter.sha256 }} */root/facter.tar.gz" | sha256sum -c - \
-    && mkdir -p /usr/src/facter \
-    && tar -xpf /root/facter.tar.gz -C /usr/src/facter --strip-components=1 \
-    && rm /root/facter.tar.gz
-
-RUN sed -i /usr/src/facter/cmake/FindCPPHOCON.cmake -e 's/libcpp-hocon.a/libcpp-hocon.so/g' \
-    && sed -i /usr/src/facter/lib/gemspec.in -e "s/required_ruby_version.*/required_ruby_version = '>= 1.9.0'/g"
-
-{% endblock %}
-
-{% block dev_prepare_puppet %}
-RUN wget -O /root/puppet.tar.gz "https://github.com/puppetlabs/puppet/archive/{{ puppet_package.puppet.version }}.tar.gz" \
-    && echo "{{ puppet_package.puppet.sha256 }} */root/puppet.tar.gz" | sha256sum -c - \
-    && mkdir -p /usr/src/puppet \
-    && tar -xpf /root/puppet.tar.gz -C /usr/src/puppet --strip-components=1 \
-    && rm /root/puppet.tar.gz
-{% endblock %}
-
-{% block dev_prepare_runit %}
-RUN wget -O /root/runit.tar.gz "http://smarden.org/runit/runit-{{ puppet_package.runit.version }}.tar.gz" \
-    && echo "{{ puppet_package.runit.sha256 }} */root/runit.tar.gz" | sha256sum -c - \
-    && mkdir -p /usr/src/runit \
-    && tar -xpf /root/runit.tar.gz -C /usr/src/runit --strip-components=2 \
-    && rm /root/runit.tar.gz
-
-ADD runit/opt.patch.tpl /usr/src/runit
-
-RUN sed -i /usr/src/runit/src/Makefile -e 's/-static//g' \
-    && sed -i /usr/src/runit/src/conf-cc -e 's/-O./-Os/g' \
-    && cd /usr/src/runit/src \ 
-    && sed -e 's@%INSTALL_DIR%@{{ install_dir }}@g' /usr/src/runit/opt.patch.tpl | patch -p1 \
-    && cd /
-{% endblock %}
-
-{% block dev_prepare_post %}
-RUN cd /usr/src \
-    && grep -lr '/\(etc\|opt\|run\)/puppetlabs' facter puppet | while read n; do \
-        sed -i "${n}" -e 's@/etc/puppetlabs@/opt/puppetizer/etc@g' -e 's@/opt/puppetlabs@/opt/puppetizer@g' -e 's@/var/run/puppetlabs@/opt/puppetizer/run@g' -e 's@/var/log/puppetlabs@/opt/puppetizer/log@g'; \
-    done
-
-{% endblock %}
-
-{% block dev_build_ruby %}
-WORKDIR /usr/src/ruby
-
-{% block dev_build_ruby_pre %}{% endblock %}
-
-RUN set -ex \
-    \
-# hack in "ENABLE_PATH_CHECK" disabling to suppress:
-#   warning: Insecure world writable dir
-    && { \
-        echo '#define ENABLE_PATH_CHECK 0'; \
-        echo; \
-        cat file.c; \
-    } > file.c.new \
-    && mv file.c.new file.c
-
-RUN set -ex \
-    && autoconf \
-    && gnuArch="$(
-    {%- if system in ["centos", "fedora"] -%}
-        rpm --eval '%{_build}'
-    {%- else -%}
-        dpkg-architecture --query DEB_BUILD_GNU_TYPE
-    {%- endif -%}
-)" \
-# the configure script does not detect isnan/isinf as macros
-    && export ac_cv_func_isnan=yes ac_cv_func_isinf=yes \
-    && optflags=-Os ./configure \
-        --prefix={{ install_dir }} \
-        --build="$gnuArch" \
-        --disable-install-doc --disable-install-rdoc --disable-install-capi \
-        --enable-shared \
-    && make -j "$(nproc)" \
-    && make install \
-    && make distclean
-
-RUN cd / \
-    && {{ install_dir }}/bin/gem update --system "{{ puppet_package.ruby_gems.version }}" \
-{#-    && {{ install_dir }}/bin/gem install bundler --version "{{ puppet_package.ruby_bundler.version }}" --force \ #}
-    && rm -r /root/.gem/
-
-ENV PATH {{ install_dir }}/bin:$PATH
-
-{% block dev_build_ruby_post %}{% endblock %}
-
-{% endblock %}
-
-{% block dev_build_facter %}
-
-{% if "boost" not in system_packages %}
-WORKDIR /usr/src/boost
-
-RUN ./bootstrap.sh --prefix={{ install_dir }} --with-toolset=gcc --with-libraries=program_options,locale,filesystem,date_time,regex,atomic,log \
-    && ./b2 toolset=gcc variant=release optimization=space link=shared runtime-link=shared headers install --prefix={{ install_dir }} -j $(nproc) \
-    && ./b2 --clean-all -n
-{% endif %}
-
-
-{% if "leatherman" not in system_packages %}
-WORKDIR /usr/src/leatherman
-
-RUN mkdir release \
-    && cd release \
-    && cmake -DCMAKE_CXX_FLAGS="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DLEATHERMAN_ENABLE_TESTING=FALSE -DLEATHERMAN_SHARED=TRUE -DLEATHERMAN_USE_ICU=TRUE -DCMAKE_INSTALL_RPATH="{{ install_dir }}/lib" {% block build_facter_leatherman_cmake_options %}{% endblock %} .. \
-    && make -j "$(nproc)" \
-    && make install \
-    && make clean
-{% endif %}
-
-{% if "cpp-hocon" not in system_packages %}
-WORKDIR /usr/src/cpp-hocon
-
-RUN mkdir release \
-    && cd release \
-    && cmake -DCMAKE_CXX_FLAGS_RELEASE="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DBUILD_SHARED_LIBS=TRUE -DCMAKE_INSTALL_RPATH="{{ install_dir }}/lib" {% block build_facter_cpp_hocon_cmake_options %}{% endblock %} .. \
-    && make -j "$(nproc)" \
-    && make install \
-    && make clean
-{% endif %}
-
-{% if "yaml-cpp" not in system_packages %}
-WORKDIR /usr/src/yaml-cpp
-
-RUN mkdir release \
-    && cd release \
-    && cmake -DCMAKE_CXX_FLAGS_RELEASE="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DBUILD_SHARED_LIBS=TRUE -DCMAKE_INSTALL_RPATH="{{ install_dir }}/lib" {% block build_facter_yaml_cpp_cmake_options %}{% endblock %} .. \
-    && make -j "$(nproc)" \
-    && make install \
-    && make distclean
-{% endif %}
-
-WORKDIR /usr/src/facter
-
-RUN mkdir release \
-    && cd release \
-    && cmake -DWITHOUT_BLKID=TRUE -DCMAKE_CXX_FLAGS_RELEASE="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DBUILD_SHARED_LIBS=TRUE {% block build_facter_facter_cmake_options %}{% endblock %} ..
-    
-RUN make -C release -j "$(nproc)" \
-    && make -C release install \
-    && ln -s release/bin bin \
-    && gem build .gemspec \
-    && gem install facter-*.gem \
-    && make -C release clean
-
-{% endblock %}
-
-{% block dev_build_puppet %}
-WORKDIR /usr/src/puppet
-
-RUN gem build .gemspec \
-    && gem install diff-lcs hiera:"{{ puppet_package.hiera.version }}" \
-    && gem install puppet-*.gem
-
-RUN ./install.rb --no-rdoc --no-ri
-
-{% block dev_build_puppet_post %}{% endblock %}
-
-{% endblock %}
-
-{% block dev_build_runit %}
-WORKDIR /usr/src/runit
-
-RUN make -C src/ -j "$(nproc)" \
-    && for i in `cat package/commands`; do install -vs -t "{{ install_dir }}/bin" "src/${i}"; done \
-    && make -C src/ clean
-
-{% endblock%}
+COPY --from=dev_runit "{{ install_dir }}" "{{ install_dir }}"
+COPY --from=dev_puppet "{{ install_dir }}" "{{ install_dir }}"
 
 {% block dev_build_post %}
 RUN find /opt/puppetizer/ -iname "*.a" -delete \
@@ -252,7 +28,7 @@ RUN rm -rf /opt/puppetizer/include /opt/puppetizer/share/man /opt/puppetizer/lib
 
 FROM base
 
-COPY --from=dev "{{ install_dir }}" "{{ install_dir}}"
+COPY --from=prepare "{{ install_dir }}" "{{ install_dir }}"
 
 RUN ln -s /opt/puppetizer/bin/puppet /usr/local/bin/puppet
 

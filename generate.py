@@ -83,6 +83,9 @@ class Config(object):
         return name in self._sets
 
 class Renderer(object):
+    
+    re_empty_lines = re.compile('\n+')
+    
     def __init__(self):
         super(Renderer, self).__init__()
         
@@ -96,7 +99,7 @@ class Renderer(object):
     def render(self, name):
         cfg = self.config[name]
         tpl = self.env.get_template("%s.dockerfile.jinja2" % cfg["system"])
-        return tpl.render(cfg)
+        return self.re_empty_lines.sub("\n", tpl.render(cfg))
 
     def load_config(self, config_path):
         self.config = Config((self._root_dir / config_path).as_posix())
