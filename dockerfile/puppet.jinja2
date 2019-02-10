@@ -1,0 +1,27 @@
+{% import 'dockerfile/macros/paths.jinja2' as paths %}
+
+FROM dev_facter as dev_puppet
+
+{% block dev_prepare_puppet %}
+RUN wget -O /root/puppet.tar.gz "https://github.com/puppetlabs/puppet/archive/{{ puppet_package.puppet.version }}.tar.gz" \
+    && echo "{{ puppet_package.puppet.sha256 }} */root/puppet.tar.gz" | sha256sum -c - \
+    && mkdir -p /usr/src/puppet \
+    && tar -xpf /root/puppet.tar.gz -C /usr/src/puppet --strip-components=1 \
+    && rm /root/puppet.tar.gz
+
+{{ paths.fix_puppetlabs_paths('/usr/src/puppet') }}
+
+{% endblock %}
+
+{% block dev_build_puppet %}
+WORKDIR /usr/src/puppet
+
+RUN gem build .gemspec \
+    && gem install diff-lcs hiera:"{{ puppet_package.hiera.version }}" \
+    && gem install puppet-*.gem
+
+RUN ./install.rb --no-rdoc --no-ri
+
+{% block dev_build_puppet_post %}{% endblock %}
+
+{% endblock %}

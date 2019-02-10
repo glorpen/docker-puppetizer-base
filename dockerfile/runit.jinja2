@@ -1,0 +1,33 @@
+FROM dev as dev_runit
+
+{# deps: none #}
+
+{% block dev_prepare_runit %}
+RUN wget -O /root/runit.tar.gz "http://smarden.org/runit/runit-{{ puppet_package.runit.version }}.tar.gz" \
+    && echo "{{ puppet_package.runit.sha256 }} */root/runit.tar.gz" | sha256sum -c - \
+    && mkdir -p /usr/src/runit \
+    && tar -xpf /root/runit.tar.gz -C /usr/src/runit --strip-components=2 \
+    && rm /root/runit.tar.gz
+
+ADD runit/opt.patch.tpl /usr/src/runit
+
+RUN sed -i /usr/src/runit/src/Makefile -e 's/-static//g' \
+    && sed -i /usr/src/runit/src/conf-cc -e 's/-O./-Os/g' \
+    && cd /usr/src/runit/src \ 
+    && sed -e 's@%INSTALL_DIR%@{{ install_dir }}@g' /usr/src/runit/opt.patch.tpl | patch -p1 \
+    && cd /
+{% endblock %}
+
+{% block dev_build_runit %}
+RUN mkdir -p {% filter oneline %}
+    /opt/puppetizer/bin
+    /opt/puppetizer/service /opt/puppetizer/etc/service
+    /opt/puppetizer/etc/runit
+{% endfilter %}
+
+RUN cd /usr/src/runit \
+    && make -C src/ -j "$(nproc)" \
+    && for i in `cat package/commands`; do install -vs -t "{{ install_dir }}/bin" "src/${i}"; done \
+    && make -C src/ clean
+
+{% endblock%}

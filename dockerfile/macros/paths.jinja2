@@ -1,0 +1,5 @@
+{% macro fix_puppetlabs_paths(path) -%}
+RUN grep -lr '/\(etc\|opt\|run\)/puppetlabs' {{ path }} | while read n; do \
+        sed -i "${n}" -e 's@/etc/puppetlabs@/opt/puppetizer/etc@g' -e 's@/opt/puppetlabs@/opt/puppetizer@g' -e 's@/var/run/puppetlabs@/opt/puppetizer/run@g' -e 's@/var/log/puppetlabs@/opt/puppetizer/log@g'; \
+    done
+{% endmacro %}

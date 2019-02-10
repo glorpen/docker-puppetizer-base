@@ -1,0 +1,37 @@
+{% import 'dockerfile/macros/paths.jinja2' as paths %}
+
+{# deps: boost, yaml-cpp, leatherman, cpp-hocon #}
+
+FROM dev_ruby as dev_facter
+
+COPY --from=dev_cpp_hocon "{{ install_dir }}" "{{ install_dir }}"
+COPY --from=dev_yaml_cpp "{{ install_dir }}" "{{ install_dir }}"
+
+{% block dev_prepare_facter %}
+RUN wget -O /root/facter.tar.gz "https://github.com/puppetlabs/facter/archive/{{ puppet_package.facter.version }}.tar.gz" \
+    && echo "{{ puppet_package.facter.sha256 }} */root/facter.tar.gz" | sha256sum -c - \
+    && mkdir -p /usr/src/facter \
+    && tar -xpf /root/facter.tar.gz -C /usr/src/facter --strip-components=1 \
+    && rm /root/facter.tar.gz
+
+RUN sed -i /usr/src/facter/cmake/FindCPPHOCON.cmake -e 's/libcpp-hocon.a/libcpp-hocon.so/g' \
+    && sed -i /usr/src/facter/lib/gemspec.in -e "s/required_ruby_version.*/required_ruby_version = '>= 1.9.0'/g"
+
+{{ paths.fix_puppetlabs_paths('/usr/src/facter') }}
+
+{% endblock %}
+
+{% block dev_build_facter %}
+WORKDIR /usr/src/facter
+
+RUN mkdir release \
+    && cd release \
+    && cmake -DWITHOUT_BLKID=TRUE -DCMAKE_CXX_FLAGS_RELEASE="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DBUILD_SHARED_LIBS=TRUE {% block build_facter_facter_cmake_options %}{% endblock %} ..
+    
+RUN make -C release -j "$(nproc)" \
+    && make -C release install \
+    && ln -s release/bin bin \
+    && gem build .gemspec \
+    && gem install facter-*.gem \
+    && make -C release clean
+{% endblock %}

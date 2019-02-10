@@ -1,0 +1,10 @@
+FROM {{ source_image }} as base
+
+{% block base %}
+RUN {{ packages_cmd_install }} {{ packages_base }}
+{%- if "boost" in system_packages %} {{ packages_base_boost }}{% endif %}
+{%- if "leatherman" in system_packages %} {{ packages_base_leatherman }}{% endif %}
+{%- if "cpp-hocon" in system_packages %} {{ packages_base_cpp_hocon }}{% endif %}
+{%- if "yaml-cpp" in system_packages %} {{ packages_base_yaml_cpp }}{% endif -%}
+&& {{ packages_cmd_clean }}
+{% endblock %}

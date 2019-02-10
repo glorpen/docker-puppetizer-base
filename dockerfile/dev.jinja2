@@ -1,0 +1,10 @@
+RUN mkdir -p "{{ install_dir }}/etc" \
+    && echo -e 'install: --no-document\nupdate: --no-document' >> "{{ install_dir }}/etc/gemrc"
+
+{% block dev_base %}
+RUN {{ packages_cmd_install }} {{ packages_dev }}
+{%- if "boost" in system_packages %} {{ packages_dev_boost }}{% endif %}
+{%- if "leatherman" in system_packages %} {{ packages_dev_leatherman }}{% endif %}
+{%- if "cpp-hocon" in system_packages %} {{ packages_dev_cpp_hocon }}{% endif %}
+{%- if "yaml-cpp" in system_packages %} {{ packages_dev_yaml_cpp }}{% endif %} && {{ packages_cmd_clean }}
+{% endblock %}

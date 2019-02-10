@@ -1,0 +1,18 @@
+FROM dev_boost as dev_leatherman
+
+{# deps: boost #}
+
+{% if "leatherman" not in system_packages %}
+RUN wget -O /root/leatherman.tar.gz "https://github.com/puppetlabs/leatherman/archive/{{ puppet_package.leatherman.version }}.tar.gz" \
+    && echo "{{ puppet_package.leatherman.sha256 }} */root/leatherman.tar.gz" | sha256sum -c - \
+    && mkdir -p /usr/src/leatherman \
+    && tar -xpf /root/leatherman.tar.gz -C /usr/src/leatherman --strip-components=1 \
+    && rm /root/leatherman.tar.gz
+
+RUN mkdir /usr/src/leatherman/release \
+    && cd /usr/src/leatherman/release \
+    && cmake -DCMAKE_CXX_FLAGS="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DLEATHERMAN_ENABLE_TESTING=FALSE -DLEATHERMAN_SHARED=TRUE -DLEATHERMAN_USE_ICU=TRUE -DCMAKE_INSTALL_RPATH="{{ install_dir }}/lib" {% block build_facter_leatherman_cmake_options %}{% endblock %} .. \
+    && make -j "$(nproc)" \
+    && make install \
+    && make clean
+{% endif %}

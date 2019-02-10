@@ -1,0 +1,63 @@
+FROM dev as dev_ruby
+
+{% block dev_prepare_ruby %}
+{# mostly taken from https://github.com/docker-library/ruby #}
+
+RUN wget -O ruby.tar.xz "https://cache.ruby-lang.org/pub/ruby/{{ puppet_package.ruby.version.major }}.{{ puppet_package.ruby.version.minor }}/ruby-{{ puppet_package.ruby.version }}.tar.xz" \
+    && echo "{{ puppet_package.ruby.sha256 }} *ruby.tar.xz" | sha256sum -c - \
+    \
+    && mkdir -p /usr/src/ruby \
+    && tar -xJf ruby.tar.xz -C /usr/src/ruby --strip-components=1 \
+    && rm ruby.tar.xz
+
+{% block dev_prepare_ruby_post %}{% endblock %}
+
+{% endblock %}
+
+
+{% block dev_build_ruby %}
+WORKDIR /usr/src/ruby
+
+{% block dev_build_ruby_pre %}{% endblock %}
+
+RUN set -ex \
+    \
+# hack in "ENABLE_PATH_CHECK" disabling to suppress:
+#   warning: Insecure world writable dir
+    && { \
+        echo '#define ENABLE_PATH_CHECK 0'; \
+        echo; \
+        cat file.c; \
+    } > file.c.new \
+    && mv file.c.new file.c
+
+RUN set -ex \
+    && autoconf \
+    && gnuArch="$(
+    {%- if system in ["centos", "fedora"] -%}
+        rpm --eval '%{_build}'
+    {%- else -%}
+        dpkg-architecture --query DEB_BUILD_GNU_TYPE
+    {%- endif -%}
+)" \
+# the configure script does not detect isnan/isinf as macros
+    && export ac_cv_func_isnan=yes ac_cv_func_isinf=yes \
+    && optflags=-Os ./configure \
+        --prefix={{ install_dir }} \
+        --build="$gnuArch" \
+        --disable-install-doc --disable-install-rdoc --disable-install-capi \
+        --enable-shared \
+    && make -j "$(nproc)" \
+    && make install \
+    && make distclean
+
+RUN cd / \
+    && {{ install_dir }}/bin/gem update --system "{{ puppet_package.ruby_gems.version }}" \
+{#-    && {{ install_dir }}/bin/gem install bundler --version "{{ puppet_package.ruby_bundler.version }}" --force \ #}
+    && rm -r /root/.gem/
+
+ENV PATH {{ install_dir }}/bin:$PATH
+
+{% block dev_build_ruby_post %}{% endblock %}
+
+{% endblock %}

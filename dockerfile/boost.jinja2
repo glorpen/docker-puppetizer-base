@@ -1,0 +1,16 @@
+FROM dev as dev_boost
+
+{# deps: none #}
+
+{% if "boost" not in system_packages %}
+RUN wget -O /root/boost.tar.gz "https://dl.bintray.com/boostorg/release/{{ puppet_package.boost.version }}/source/boost_{{ puppet_package.boost.version | replace(".", "_") }}.tar.gz" \
+    && echo "{{ puppet_package.boost.sha256 }} */root/boost.tar.gz" | sha256sum -c - \
+    && mkdir -p /usr/src/boost \
+    && tar -xpf /root/boost.tar.gz -C /usr/src/boost --strip-components=1 \
+    && rm /root/boost.tar.gz
+
+RUN cd /usr/src/boost \
+    && ./bootstrap.sh --prefix={{ install_dir }} --with-toolset=gcc --with-libraries=program_options,locale,filesystem,date_time,regex,atomic,log \
+    && ./b2 toolset=gcc variant=release optimization=space link=shared runtime-link=shared headers install --prefix={{ install_dir }} -j $(nproc) \
+    && ./b2 --clean-all -n
+{% endif %}
