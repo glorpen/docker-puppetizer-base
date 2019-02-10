@@ -20,7 +20,7 @@ puppetizer_services_dir="${puppetizer_var_dir}/services"
 puppetizer_scripts_dir="${puppetizer_var_dir}/scripts"
 puppetizer_initialized_token="${puppetizer_var_dir}/initialized"
 
-puppetizer_os="$(cat $puppetizer_share_dir/os)"
+#puppetizer_os="$(cat $puppetizer_share_dir/os)"
 
 puppetizer_has_feature(){
 	lines=$(grep -xc "${1}" "${puppetizer_share_dir}/features")

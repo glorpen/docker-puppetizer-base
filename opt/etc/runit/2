@@ -1,0 +1,20 @@
+#!/bin/sh
+
+echo "?? run"
+
+test_exit(){
+    echo "handler exit"
+    kill %1
+    wait
+    exit 0
+}
+
+test_reload(){
+    echo "handler reload"
+}
+
+trap '{ test_exit; }' TERM
+
+/opt/puppetizer/bin/runsvdir /opt/puppetizer/service &
+
+while :; do wait; done

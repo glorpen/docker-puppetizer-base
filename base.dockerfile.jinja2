@@ -33,3 +33,4 @@ COPY --from=prepare "{{ install_dir }}" "{{ install_dir }}"
 RUN ln -s /opt/puppetizer/bin/puppet /usr/local/bin/puppet
 
 ADD ./puppet /opt/puppetizer/etc/code/modules/puppetizer
+ADD ./opt /opt/puppetizer/
