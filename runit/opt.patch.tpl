@@ -1,16 +1,3 @@
-diff --git a/pathexec_run.c b/pathexec_run.c
-index 1770ac7..291a84d 100644
---- a/pathexec_run.c
-+++ b/pathexec_run.c
-@@ -20,7 +20,7 @@ void pathexec_run(const char *file,const char * const *argv,const char * const *
-   }
- 
-   path = env_get("PATH");
--  if (!path) path = "/bin:/usr/bin";
-+  if (!path) path = "%INSTALL_DIR%/bin:/bin:/usr/bin";
- 
-   savederrno = 0;
-   for (;;) {
 diff --git a/runit.c b/runit.c
 index 48620b3..b5d3c5c 100644
 --- a/runit.c
@@ -41,6 +28,19 @@ index ba98386..b7034e7 100644
 +#define STOPIT "%INSTALL_DIR%/etc/runit/stopit"
 +#define REBOOT "%INSTALL_DIR%/etc/runit/reboot"
 +#define CTRLALTDEL "%INSTALL_DIR%/etc/runit/ctrlaltdel"
+diff --git a/runsvdir.c b/runsvdir.c
+index 07c1d8e..a4bea53 100644
+--- a/runsvdir.c
++++ b/runsvdir.c
+@@ -65,7 +65,7 @@ void runsv(int no, char *name) {
+     /* child */
+     const char *prog[3];
+ 
+-    prog[0] ="runsv";
++    prog[0] ="%INSTALL_DIR%/bin/runsv";
+     prog[1] =name;
+     prog[2] =0;
+     sig_uncatch(sig_hangup);
 diff --git a/sv.c b/sv.c
 index 0125795..dd6d49e 100644
 --- a/sv.c
