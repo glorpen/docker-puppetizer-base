@@ -1,5 +1,5 @@
 diff --git a/runit.c b/runit.c
-index 48620b3..c2067d8 100644
+index 48620b3..7495cdf 100644
 --- a/runit.c
 +++ b/runit.c
 @@ -23,9 +23,9 @@
@@ -50,32 +50,20 @@ index 48620b3..c2067d8 100644
        
        while (read(selfpipe[0], &ch, 1) == 1) {}
        while ((child =wait_nohang(&wstat)) > 0)
-@@ -217,32 +223,14 @@ int main (int argc, const char * const *argv, char * const *envp) {
+@@ -217,8 +223,8 @@ int main (int argc, const char * const *argv, char * const *envp) {
          sigc =sigi =0;
          continue;
        }
 -      if (sigi && (stat(CTRLALTDEL, &s) != -1) && (s.st_mode & S_IXUSR)) {
 -        strerr_warn2(INFO, "ctrl-alt-del request...", 0);
--        prog[0] =CTRLALTDEL; prog[1] =0;
--        while ((pid2 =fork()) == -1) {
--          strerr_warn4(FATAL, "unable to fork for \"", CTRLALTDEL,
--                       "\" pausing: ", &strerr_sys);
--          sleep(5);
--        }
--        if (!pid2) {
--          /* child */
--          strerr_warn3(INFO, "enter stage: ", prog[0], 0);
--          execve(*prog, (char *const *) prog, envp);
--          strerr_die4sys(0, FATAL, "unable to start child: ", prog[0], ": ");
--        }
--        if (wait_pid(&wstat, pid2) == -1)
--          strerr_warn2(FATAL, "wait_pid: ", &strerr_sys);
--        if (wait_crashed(wstat))
--          strerr_warn3(WARNING, "child crashed: ", CTRLALTDEL, 0);
--        strerr_warn3(INFO, "leave stage: ", prog[0], 0);
 +      if (sigi) {
-+    	strerr_warn2(INFO, "reload request...", 0);
-+	    kill(pid, sig_hangup);
++        strerr_warn2(INFO, "reload request...", 0);
+         prog[0] =CTRLALTDEL; prog[1] =0;
+         while ((pid2 =fork()) == -1) {
+           strerr_warn4(FATAL, "unable to fork for \"", CTRLALTDEL,
+@@ -237,12 +243,10 @@ int main (int argc, const char * const *argv, char * const *envp) {
+           strerr_warn3(WARNING, "child crashed: ", CTRLALTDEL, 0);
+         strerr_warn3(INFO, "leave stage: ", prog[0], 0);
          sigi =0;
 -        sigc++;
        }
@@ -101,7 +89,7 @@ index ba98386..2e05977 100644
 +#define REBOOT "%INSTALL_DIR%/etc/runit/reboot"
 +#define CTRLALTDEL "%INSTALL_DIR%/etc/runit/reload"
 diff --git a/runsvdir.c b/runsvdir.c
-index 07c1d8e..b26c873 100644
+index 07c1d8e..9645372 100644
 --- a/runsvdir.c
 +++ b/runsvdir.c
 @@ -65,7 +65,7 @@ void runsv(int no, char *name) {
@@ -113,16 +101,15 @@ index 07c1d8e..b26c873 100644
      prog[1] =name;
      prog[2] =0;
      sig_uncatch(sig_hangup);
-@@ -278,7 +278,8 @@ int main(int argc, char **argv) {
+@@ -275,6 +275,8 @@ int main(int argc, char **argv) {
+ 
+     switch(exitsoon) {
+     case 1:
++      for (i =0; i < svnum; i++) if (sv[i].pid) kill(sv[i].pid, SIGTERM);
++      for (i =0; i < svnum; i++) if (sv[i].pid) waitpid(sv[i].pid, NULL, 0);
        _exit(0);
      case 2:
        for (i =0; i < svnum; i++) if (sv[i].pid) kill(sv[i].pid, SIGTERM);
--      _exit(111);
-+      for (i =0; i < svnum; i++) if (sv[i].pid) waitpid(sv[i].pid, NULL, 0);
-+      _exit(0);
-     }
-   }
-   /* not reached */
 diff --git a/sv.c b/sv.c
 index 0125795..6cdcb86 100644
 --- a/sv.c

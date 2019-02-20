@@ -4,26 +4,24 @@
 # Author: Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>
 #
 
-echo "?? run"
+runsvdir="/opt/puppetizer/bin/runsvdir"
 
-. /opt/puppetizer/share/common.sh
+set -e
 
-on_exit(){
-    echo "handler gracefull exit"
-    kill -HUP %1
-    wait
-    exit 0
-}
-
-on_reload(){
-    echo "Reapplying configuration..."
+do_init(){
     puppet_apply
-    echo "Configuration applied."
 }
 
-trap '{ on_exit; }' TERM
-trap '{ on_reload; }' HUP
+delayed_start(){
+    . /opt/puppetizer/share/common.sh
+    
+    while :;
+    do
+        pkill -0 -f "${runsvdir}" && ( do_init; exit 0 ) 
+        sleep 1s
+    done
+}
 
-/opt/puppetizer/bin/runsvdir /opt/puppetizer/service &
+delayed_start &
 
-while :; do wait; done
+exec ${runsvdir} /opt/puppetizer/service
