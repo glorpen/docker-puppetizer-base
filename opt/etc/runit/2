@@ -1,19 +1,28 @@
 #!/bin/sh
 
+#
+# Author: Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>
+#
+
 echo "?? run"
 
-test_exit(){
-    echo "handler exit"
-    kill %1
+. /opt/puppetizer/share/common.sh
+
+on_exit(){
+    echo "handler gracefull exit"
+    kill -HUP %1
     wait
     exit 0
 }
 
-test_reload(){
-    echo "handler reload"
+on_reload(){
+    echo "Reapplying configuration..."
+    puppet_apply
+    echo "Configuration applied."
 }
 
-trap '{ test_exit; }' TERM
+trap '{ on_exit; }' TERM
+trap '{ on_reload; }' HUP
 
 /opt/puppetizer/bin/runsvdir /opt/puppetizer/service &
 
