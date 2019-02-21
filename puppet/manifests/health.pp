@@ -1,5 +1,5 @@
 define puppetizer::health(
-  Optional[String] $interpreter = '/bin/sh',
+  Optional[String] $interpreter = undef,
   String $command
 ){
   include ::puppetizer
@@ -12,7 +12,6 @@ define puppetizer::health(
   
   file { "${::puppetizer::health_scripts_path}/${name}":
     content => $_content,
-    mode => 'a=,u=rx',
-    require => File[$::puppetizer::health_scripts_path]
+    mode => 'a=,u=rx'
   }
 }

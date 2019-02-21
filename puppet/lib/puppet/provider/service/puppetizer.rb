@@ -1,10 +1,7 @@
-# Daemontools service management
+# Puppetizer/runit service management
 #
 # author Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>
 
-#
-# TODO: puppetizer as default in container.. facter[pouppetizer] = true?
-#
 Puppet::Type.type(:service).provide :puppetizer, :parent => :runit do
   desc <<-'EOT'
     Runit service management contained in puppetizer env.
@@ -14,7 +11,7 @@ Puppet::Type.type(:service).provide :puppetizer, :parent => :runit do
 
     * `/opt/puppetizer/service`
 
-    The daemon directory should be in one of the following locations:
+    The daemon directory should be in the following location:
 
     * `/opt/puppetizer/etc/service`
 

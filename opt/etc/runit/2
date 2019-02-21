@@ -6,10 +6,11 @@
 
 runsvdir="/opt/puppetizer/bin/runsvdir"
 
-set -e
-
 do_init(){
-    puppet_apply
+    puppet_apply || kill -TERM 0
+    
+    touch "${puppetizer_initialized_token}"
+    echo "Container marked as initialized"
 }
 
 delayed_start(){
