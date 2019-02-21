@@ -8,114 +8,16 @@
 
 build_env_path="${puppet_env_dir}/build"
 
-cleanup_alpine(){
-	rm -rf /var/cache/apk/*
-}
-
-cleanup_centos(){
-	yum clean all
-}
-
 cleanup()
 {
 	echo "... cleaning up"
 	
-	cleanup_${puppetizer_os}
+	os_packages_cleanup
 	
-	# remove build env
-	rm -rf "${build_env_path}"
+	rm -rf "${build_code_dir}"
 	
 	# clear puppet cache
-	rm -rf /opt/puppetlabs/puppet/cache/{reports,state}/
-}
-
-setup_puppet(){
-    cat << EOF > "${puppet_conf_dir}/puppet.conf"
-[main]
-report = false
-strict = off
-onetime = true
-EOF
-}
-
-setup_puppetdb()
-{
-	echo "... enabling PuppetDB integration"
-	
-	# check if its not already enabled
-	if [ $(grep 'puppetdb' /etc/puppetlabs/puppet/puppet.conf | wc -l) -gt 0 ];
-	then
-		echo "PuppetDB was already enabled before"
-		exit 1
-	fi
-	
-	# enable puppetdb
-	cat << EOF >> "${puppet_conf_dir}/puppet.conf"
-storeconfigs = true
-storeconfigs_backend = puppetdb
-reports = puppetdb
-EOF
-	
-	cat << EOF >> "${puppet_conf_dir}/puppetdb.conf"
-[main]
-server_urls = https://puppetdb:8081
-soft_write_failure = false
-EOF
-	
-	cat << EOF > "${puppet_conf_dir}/routes.yaml"
----
-apply:
-  catalog:
-    terminus: compiler
-    cache: puppetdb
-  resource:
-    #terminus: ral
-    cache: puppetdb
-  facts:
-    terminus: facter
-    cache: puppetdb_apply
-EOF
-}
-
-link_vendor_modules()
-{
-	puppetizer_module_name="${1}"
-	find "${puppetizer_sources}/${puppetizer_module_name}/modules" -maxdepth 1 -mindepth 1 -type d | while read vendor_mod;
-	do
-		vendor_mod_name="$(basename ${vendor_mod})"
-		
-		ln -fs "${vendor_mod}" "${puppetizer_vendor_modules}/${vendor_mod_name}"
-	done
-}
-
-hiera_create_initial()
-{
-	cat << EOF > "${puppet_conf_dir}/hiera.yaml"
----
-# Hiera 5 Global configuration file
-
-version: 5
-
-hierarchy:
-  - name: Puppetizer runtime data dir
-    data_hash: yaml_data
-    glob: ${puppetizer_var_dir}/hiera/**.yaml
-EOF
-}
-
-hiera_register_puppetizer_module()
-{
-	short_name="${1}"
-	module_name="puppetizer_${short_name}"
-	
-	cat << EOF >> "${puppet_conf_dir}/hiera.yaml"
-  - name: Puppetizer env data for ${module_name}
-    data_hash: yaml_data
-    path: ${puppetizer_sources}/${short_name}/hiera/env-%{environment}.yaml
-  - name: Puppetizer data for ${module_name}
-    data_hash: yaml_data
-    path: ${puppetizer_sources}/${short_name}/hiera/puppetizer.yaml
-EOF
+	#rm -rf /opt/puppetlabs/puppet/cache/{reports,state}/
 }
 
 pupinit_create_initial()
@@ -126,8 +28,7 @@ pupinit_create_initial()
 
 pupinit_register_puppetizer_module()
 {
-	short_name="${1}"
-	module_name="puppetizer_${short_name}"
+	module_name="${1}"
 	
 	echo "class { ::${module_name}: }->" >> "${puppetizer_init}"
 }
@@ -137,27 +38,17 @@ pupinit_close()
 	echo "class { ::puppetizer::last: }" >> "${puppetizer_init}"
 }
 
-link_puppetizer_module()
-{
-	short_name="${1}"
-	module_name="puppetizer_${short_name}"
-	
-	ln -fs "${puppetizer_sources}/${short_name}/code" "${puppetizer_modules}/${module_name}";
-}
-
 setup_puppetizer_modules()
 {
 	
 	pupinit_create_initial
-	hiera_create_initial
+	#hiera_create_initial
 	
-	find "${puppetizer_sources}" -maxdepth 1 -mindepth 1 -type d | while read n;
+	find "${puppetizer_mods_dir}" -maxdepth 1 -mindepth 1 -type d | while read n;
 	do
 		short_name="$(basename $n)"
 		
-		link_puppetizer_module "${short_name}"
-		link_vendor_modules "${short_name}"
-		hiera_register_puppetizer_module "${short_name}"
+		#hiera_register_puppetizer_module "${short_name}"
 		pupinit_register_puppetizer_module "${short_name}"
 		
 	done
@@ -165,24 +56,17 @@ setup_puppetizer_modules()
 	pupinit_close
 }
 
-puppet_build_centos(){
-    :
-}
-puppet_build_alpine(){
-    # apk puppet module will not fetch repo definitions by itself
-    /sbin/apk update
-}
-
 puppet_build()
 {
-    setup_puppet
 	setup_puppetizer_modules
 	
 	mkdir -p "${build_env_path}"
 	
-	puppet_build_${puppetizer_os}
+	os_packages_init
 	
 	puppet_apply build
+	
+	cleanup
 }
 
 #
@@ -190,14 +74,3 @@ puppet_build()
 #
 
 puppet_build
-
-# setup puppetdb after build so there is no
-# orphaned storeconfigs
-if puppetizer_has_feature "puppetdb";
-then
-	setup_puppetdb
-else
-	echo "... skipping PuppetDB integration"
-fi
-
-cleanup

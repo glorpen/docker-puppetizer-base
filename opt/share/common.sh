@@ -4,34 +4,23 @@
 
 set -e
 
-puppetizer_bin="/opt/puppetizer/bin"
-puppetizer_sources="/opt/puppetizer/sources"
-puppetizer_var_dir="/var/opt/puppetizer"
-puppetizer_modules="${puppetizer_var_dir}/modules"
-puppetizer_vendor_modules="/var/opt/puppetizer/vendor"
-puppetizer_init="/var/opt/puppetizer/init.pp"
-puppet_conf_dir="/etc/puppetlabs/puppet"
-puppet_env_dir="/etc/puppetlabs/code/environments"
-puppet_modules_dir="/etc/puppetlabs/code/modules"
-puppetizer_share_dir="/opt/puppetizer/share"
+puppetizer_root_dir="/opt/puppetizer"
+puppetizer_bin="${puppetizer_root_dir}/bin"
+#puppetizer_sources="/opt/puppetizer/sources"
+puppetizer_var_dir="${puppetizer_root_dir}/puppet"
+puppetizer_mods_dir="${puppetizer_var_dir}/modules"
+#puppetizer_vendor_modules="/var/opt/puppetizer/vendor"
+puppetizer_init="${puppetizer_var_dir}/init.pp"
+puppet_conf_dir="${puppetizer_root_dir}/etc/puppet"
+puppet_code_dir="${puppetizer_root_dir}/etc/code"
+puppet_env_dir="${puppet_code_dir}/environments"
+puppet_modules_dir="${puppetizer_var_dir}/external-modules"
+puppetizer_modules_dir="${puppetizer_var_dir}/internal-modules"
+#puppetizer_share_dir="/opt/puppetizer/share"
+puppetizer_puppetfile="${puppet_conf_dir}/puppetfile"
 
-puppetizer_health_dir="${puppetizer_var_dir}/health"
-puppetizer_services_dir="${puppetizer_var_dir}/services"
-puppetizer_scripts_dir="${puppetizer_var_dir}/scripts"
-puppetizer_initialized_token="${puppetizer_var_dir}/initialized"
-
-#puppetizer_os="$(cat $puppetizer_share_dir/os)"
-
-puppetizer_has_feature(){
-	lines=$(grep -xc "${1}" "${puppetizer_share_dir}/features")
-	
-	if [ $lines -eq 0 ];
-	then
-		return 1
-	else
-		return 0
-	fi
-}
+puppetizer_health_dir="${puppetizer_root_dir}/health" #
+puppetizer_initialized_token="${puppetizer_root_dir}/initialized" #
 
 puppet_apply()
 {
@@ -45,7 +34,7 @@ puppet_apply()
 	
 	# apply puppet manifests and check for exit code
 	set +e
-	"${puppetizer_bin}/puppet" apply --detailed-exitcodes $debug_opts --environment=${env} --modulepath="${puppetizer_modules}:${puppetizer_vendor_modules}:${puppet_modules_dir}" "${puppetizer_init}"
+	"${puppetizer_bin}/puppet" apply --detailed-exitcodes $debug_opts --environment=${env} "${puppetizer_init}"
 	puppet_ret=$?
 	set -e
 	
@@ -65,11 +54,22 @@ find_scripts()
 	find "${path}" -type f -perm -u+x $@ | sort
 }
 
-run_scripts_sync()
+print_puppet_config()
 {
-	while read n
-	do
-		echo "Executing ${n} ...";
-		"${n}" || echo "Running ${n} failed with ${?}, continuing";
-	done
+	/opt/puppetizer/bin/puppet config print "${1}"
+}
+
+os_packages_init()
+{
+	%PUPPETIZER_PKG_INIT%
+}
+
+os_packages_cleanup()
+{
+	%PUPPETIZER_PKG_CLEANUP%
+}
+
+os_packages_install()
+{
+	%PUPPETIZER_PKG_INSTALL%
 }

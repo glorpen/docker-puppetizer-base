@@ -1,5 +1,6 @@
 {% extends "base.dockerfile.jinja2" %}
 
+{% set packages_cmd_init %}apk update{% endset %}
 {% set packages_cmd_install %}apk add --no-cache{% endset %}
 {% set packages_cmd_clean %}rm -rfv /var/cache/apk/*{% endset %}
 

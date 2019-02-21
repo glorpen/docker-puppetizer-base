@@ -1,0 +1,15 @@
+#!/bin/sh -e
+
+#
+# Author: Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>
+#
+
+. /opt/puppetizer/share/common.sh
+
+${puppetizer_bin}/gem install r10k
+${puppetizer_bin}/r10k puppetfile -v debug install --moduledir "${puppet_modules_dir}" --puppetfile "${puppetizer_puppetfile}" --force
+
+${puppetizer_bin}/gem uninstall -x $(find ${puppetizer_root_dir}/lib/ruby/gems/*/cache -name "*.gem" | sed -e 's@.*/\([^/]\+\).gem$@\1@' -e 's@^\(.*\)-@\1:@' | xargs)
+
+# clean modules installed by r10k and gems
+rm -rf /tmp/* ${puppet_modules_dir}/*/spec ~/.r10k ${puppetizer_root_dir}/lib/ruby/gems/*/cache ~/.gem

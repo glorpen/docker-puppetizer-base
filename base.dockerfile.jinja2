@@ -26,13 +26,21 @@ RUN find /opt/puppetizer/ -iname "*.a" -delete \
 RUN rm -rf /opt/puppetizer/include /opt/puppetizer/share/man /opt/puppetizer/lib/ruby/gems/*/cache/
 {% endblock %}
 
+FROM base as local
+ADD ./opt /opt/puppetizer/
+
+RUN sed -i /opt/puppetizer/share/common.sh \
+    -e 's@%PUPPETIZER_PKG_CLEANUP%@{{ packages_cmd_clean }}@g' \
+    -e 's@%PUPPETIZER_PKG_INIT%@{{ packages_cmd_init }}@g' \
+    -e 's@%PUPPETIZER_PKG_INSTALL%@{{ packages_cmd_install }}@g'
+
+ADD ./puppet /opt/puppetizer/puppet/internal-modules/puppetizer
+
 FROM base
 
 COPY --from=prepare "{{ install_dir }}" "{{ install_dir }}"
 
-RUN ln -s /opt/puppetizer/bin/puppet /usr/local/bin/puppet
-
-ADD ./puppet /opt/puppetizer/etc/code/modules/puppetizer
-ADD ./opt /opt/puppetizer/
+COPY --from=local "{{ install_dir }}" "{{ install_dir }}"
 
 HEALTHCHECK CMD ["/opt/puppetizer/bin/health"]
+CMD ["/opt/puppetizer/bin/runit-init"]

@@ -1,0 +1,17 @@
+---
+# Hiera 5 Global configuration file
+
+version: 5
+
+defaults:  # Used for any hierarchy level that omits these keys.
+  datadir: /opt/puppetizer
+  data_hash: yaml_data  # Use the built-in YAML backend.
+hierarchy:
+  - name: Puppetizer runtime data dir
+    glob: hiera/**.yaml
+
+  - name: Puppetizer modules env data
+    glob: puppet/hiera/**/env-%{environment}.yaml
+
+  - name: Puppetizer modules data
+    glob: puppet/hiera/**/puppetizer.yaml
