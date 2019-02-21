@@ -1,5 +1,5 @@
 diff --git a/runit.c b/runit.c
-index 48620b3..7495cdf 100644
+index 48620b3..f18ffd2 100644
 --- a/runit.c
 +++ b/runit.c
 @@ -23,9 +23,9 @@
@@ -75,6 +75,24 @@ index 48620b3..7495cdf 100644
  
          /* kill stage 2 */
  #ifdef DEBUG
+@@ -294,7 +298,7 @@ int main (int argc, const char * const *argv, char * const *envp) {
+     if (ttyfd > 2) close(ttyfd);
+   }
+ 
+-#ifdef RB_AUTOBOOT
++#ifdef RB_AUTOBOOT_UNDEF
+   /* fallthrough stage 3 */
+   strerr_warn2(INFO, "sending KILL signal to all processes...", 0);
+   kill(-1, SIGKILL);
+@@ -339,7 +343,7 @@ int main (int argc, const char * const *argv, char * const *envp) {
+   }
+ #endif
+ 
+-  for (;;) sig_pause();
++  sync();
+   /* not reached */
+   strerr_die2x(0, INFO, "exit.");
+   return(0);
 diff --git a/runit.h b/runit.h
 index ba98386..2e05977 100644
 --- a/runit.h
