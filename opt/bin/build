@@ -14,10 +14,10 @@ cleanup()
 	
 	os_packages_cleanup
 	
-	rm -rf "${build_code_dir}"
+	rm -rf "${puppet_code_dir}"
 	
 	# clear puppet cache
-	#rm -rf /opt/puppetlabs/puppet/cache/{reports,state}/
+	rm -rf ${puppetizer_root_dir}/puppet/cache ${puppetizer_root_dir}/log 
 }
 
 pupinit_create_initial()

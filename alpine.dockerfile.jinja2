@@ -64,7 +64,3 @@ RUN /opt/puppetizer/bin/puppet module install puppetlabs-apk --target-dir {{ ins
     && wget -O - https://github.com/puppetlabs/puppetlabs-apk/pull/4.diff | patch -p1
 {% endblock %}
 
-{% block dev_build_ruby_post %}
-# remove system ruby just to be sure
-RUN apk del ruby
-{% endblock %}

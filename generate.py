@@ -8,10 +8,22 @@ import glorpen.config.loaders as loaders
 import glorpen.config.fields.simple as fields_simple
 import glorpen.config.fields.version as fields_version
 import re
+from jinja2 import nodes
+from jinja2.ext import Extension
 
 re_line = re.compile("(\s*\n\s*)+")
 def filter_oneline(value):
     return re_line.sub(" ", value.strip())
+
+class EmbedExtension(Extension):
+    tags = set(['embed'])
+
+    def parse(self, parser):
+        lineno = next(parser.stream).lineno
+        tpl_name = parser.parse_expression()
+    
+        tpl_data, file, updater = self.environment.loader.get_source(self.environment, tpl_name.value)
+        return self.environment.parse(tpl_data).body
 
 install_dir = "/opt/puppetizer"
 
@@ -93,6 +105,7 @@ class Renderer(object):
         
         self.env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(self._root_dir.as_posix()),
+            extensions=[EmbedExtension]
         )
         self.env.filters["oneline"] = filter_oneline
     

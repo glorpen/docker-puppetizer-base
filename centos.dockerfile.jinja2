@@ -79,7 +79,3 @@ RUN {{ packages_cmd_install }} epel-release \
     && {{ packages_cmd_clean }} \
     && ln -s $(find  /usr/bin /bin -name cmake3) /usr/local/bin/cmake
 {% endblock %}
-
-{% block build_ruby_post %}
-RUN yum remove -y ruby
-{% endblock %}

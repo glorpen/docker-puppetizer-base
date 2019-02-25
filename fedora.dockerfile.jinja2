@@ -48,10 +48,6 @@ cmake gcc-c++ libcurl-devel
 wget patch which findutils
 {% endset %}
 
-{% block build_ruby_post %}
-RUN dnf remove -y ruby
-{% endblock %}
-
 {% block build_facter_leatherman_cmake_options -%}
 -DCMAKE_CXX_FLAGS="-Os -Wno-error=class-memaccess -Wno-error=ignored-qualifiers"
 {%- endblock %}

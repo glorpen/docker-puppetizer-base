@@ -45,8 +45,3 @@ zlib1g-dev
 cmake g++ libcurl4-openssl-dev
 wget
 {% endset %}
-
-{% block dev_build_ruby_post %}
-# remove system ruby just to be sure
-RUN apt-get -y remove ruby
-{% endblock %}

@@ -1,17 +1,17 @@
-{% include "dockerfile/base.jinja2" %}
+{% embed "dockerfile/base.jinja2" %}
 
 FROM base as dev
 
-{% include "dockerfile/dev.jinja2" %}
+{% embed "dockerfile/dev.jinja2" %}
 
-{% include "dockerfile/runit.jinja2" %}
-{% include "dockerfile/ruby.jinja2" %}
-{% include "dockerfile/boost.jinja2" %}
-{% include "dockerfile/yaml-cpp.jinja2" %}
-{% include "dockerfile/leatherman.jinja2" %}
-{% include "dockerfile/cpp-hocon.jinja2" %}
-{% include "dockerfile/facter.jinja2" %}
-{% include "dockerfile/puppet.jinja2" %}
+{% embed "dockerfile/runit.jinja2" %}
+{% embed "dockerfile/ruby.jinja2" %}
+{% embed "dockerfile/boost.jinja2" %}
+{% embed "dockerfile/yaml-cpp.jinja2" %}
+{% embed "dockerfile/leatherman.jinja2" %}
+{% embed "dockerfile/cpp-hocon.jinja2" %}
+{% embed "dockerfile/facter.jinja2" %}
+{% embed "dockerfile/puppet.jinja2" %}
 
 FROM dev as prepare
 
