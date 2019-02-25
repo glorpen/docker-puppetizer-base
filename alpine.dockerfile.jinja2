@@ -59,8 +59,8 @@ RUN cd /usr/src/ruby \
 {% endblock %}
 
 {% block dev_build_puppet_post %}
-RUN /opt/puppetizer/bin/puppet module install puppetlabs-apk \
-    && cd {{ install_dir }}/etc/code/modules/apk/ \
+RUN /opt/puppetizer/bin/puppet module install puppetlabs-apk --target-dir {{ install_dir }}/puppet/internal-modules \
+    && cd {{ install_dir }}/puppet/internal-modules/apk/ \
     && wget -O - https://github.com/puppetlabs/puppetlabs-apk/pull/4.diff | patch -p1
 {% endblock %}
 
