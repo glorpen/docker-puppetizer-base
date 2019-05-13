@@ -34,7 +34,7 @@ RUN sed -i /opt/puppetizer/share/common.sh \
     -e 's@%PUPPETIZER_PKG_INIT%@{{ packages_cmd_init }}@g' \
     -e 's@%PUPPETIZER_PKG_INSTALL%@{{ packages_cmd_install }}@g'
 
-ADD ./puppet /opt/puppetizer/puppet/internal-modules/puppetizer
+ADD ./puppet /opt/puppetizer/puppet/modules-internal/puppetizer
 
 FROM base
 
