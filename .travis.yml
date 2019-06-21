@@ -20,14 +20,14 @@ script:
 branches:
   only:
     - master
-    - /v\d+/
-deploy:
-  - provider: script
-    script: bash ci/push.sh
-    on:
-      tags: true
-      all_branches: true
-  - provider: script
-    script: bash ci/push.sh
-    on:
-      branch: master
+    # - /v\d+/
+# deploy:
+#   - provider: script
+#     script: bash ci/push.sh
+#     on:
+#       tags: true
+#       all_branches: true
+#   - provider: script
+#     script: bash ci/push.sh
+#     on:
+#       branch: master
