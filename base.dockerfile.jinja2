@@ -38,9 +38,21 @@ ADD ./puppet /opt/puppetizer/puppet/modules-internal/puppetizer
 
 FROM base
 
+LABEL \
+    org.opencontainers.image.authors="Arkadiusz Dzięgiel <arkadiusz.dziegiel@glorpen.pl>" \
+    org.opencontainers.image.url="https://github.com/glorpen/docker-puppetizer-base" \
+    org.opencontainers.image.documentation="https://github.com/glorpen/docker-puppetizer-base" \
+    org.opencontainers.image.source="https://github.com/glorpen/docker-puppetizer-base" \
+    org.opencontainers.image.title="Puppetizer" \
+    org.opencontainers.image.description="Base for images configured by Puppet"
+
 COPY --from=prepare "{{ install_dir }}" "{{ install_dir }}"
 
 COPY --from=local "{{ install_dir }}" "{{ install_dir }}"
 
 HEALTHCHECK CMD ["/opt/puppetizer/bin/health"]
 CMD ["/opt/puppetizer/bin/runit-init"]
+
+LABEL \
+    org.opencontainers.image.created="{{ now.isoformat() }}" \
+    org.opencontainers.image.version="{{ version }}"

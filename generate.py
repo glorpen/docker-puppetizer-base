@@ -10,6 +10,7 @@ import glorpen.config.fields.version as fields_version
 import re
 from jinja2 import nodes
 from jinja2.ext import Extension
+import datetime
 
 re_line = re.compile("(\s*\n\s*)+")
 def filter_oneline(value):
@@ -42,7 +43,8 @@ class Config(object):
         
         self._checksums = cfg.get("sha256")
         self._packages = cfg.get("package_sets")
-        self._targets = cfg.get("targets")
+        self._targets = cfg.get("builds")["targets"]
+        self._build_version = cfg.get("builds")["version"]
     
     def _load(self, config_path):
         loader = loaders.YamlLoader(filepath=config_path)
@@ -52,24 +54,21 @@ class Config(object):
                 keys = fields_simple.String(),
                 values = fields_simple.Dict(dict(((i, fields_version.Version())) for i in self._ver_keys))
             ),
-            "targets": fields_simple.Dict(
-                keys = fields_simple.String(),
-                values = fields_simple.Dict({
-                    "source-image": fields_simple.String(),
-                    "system": fields_simple.String(),
-                    "puppet-package-version": fields_simple.String(),
-                    "system-packages": fields_simple.List(fields_simple.String())
-                })
-            )
+            "builds": fields_simple.Dict({
+                "version": fields_version.Version(),
+                "targets": fields_simple.Dict(
+                    keys = fields_simple.String(),
+                    values = fields_simple.Dict({
+                        "source-image": fields_simple.String(),
+                        "system": fields_simple.String(),
+                        "puppet-package-version": fields_simple.String(),
+                        "system-packages": fields_simple.List(fields_simple.String())
+                    })
+                )
+            })
         })
         return GConfig(loader=loader, spec=spec).finalize()
-    
-    
-    def _read_package(self, data):
-        return dict(
-            (i, VersionInfo.parse(data.get(i))) for i in self._pkg_keys
-        )
-    
+
     def __getitem__(self, name):
         
         s = self._targets[name]
@@ -87,12 +86,18 @@ class Config(object):
             "install_dir": install_dir,
             "system": s["system"],
             "system_packages": s["system-packages"],
-            "source_image": s["source-image"]
+            "source_image": s["source-image"],
+            "version": self.version
         }
         return ret
     
-    def __hasitem__(self, name):
-        return name in self._sets
+    @property
+    def targets(self):
+        return tuple(self._targets.keys())
+    @property
+    def version(self):
+        return self._build_version
+
 
 class Renderer(object):
     
@@ -108,6 +113,9 @@ class Renderer(object):
             extensions=[EmbedExtension]
         )
         self.env.filters["oneline"] = filter_oneline
+        self.env.globals.update(
+            now=datetime.datetime.utcnow()
+        )
     
     def render(self, name):
         cfg = self.config[name]
@@ -117,13 +125,29 @@ class Renderer(object):
     def load_config(self, config_path):
         self.config = Config((self._root_dir / config_path).as_posix())
 
+def cli_render(r, ns):
+    sys.stdout.write(r.render(ns.name))
+
+def cli_info(r, ns):
+    if ns.mode == "targets":
+        sys.stdout.write("\n".join(r.config.targets)+"\n")
+    elif ns.mode == "version":
+        sys.stdout.write(str(r.config.version)+"\n")
+
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument('name')
-    p.add_argument('--destination', '-d', action="store", default=None)
+    subparsers = p.add_subparsers()
+
+    p_render = subparsers.add_parser("render")
+    p_render.set_defaults(f=cli_render)
+    p_render.add_argument('name')
+
+    p_info = subparsers.add_parser("info")
+    p_info.set_defaults(f=cli_info)
+    p_info.add_argument("mode", choices=('targets','version'))
     
     ns = p.parse_args()
     
     r = Renderer()
     r.load_config("config.yaml")
-    sys.stdout.write(r.render(ns.name))
+    ns.f(r, ns)

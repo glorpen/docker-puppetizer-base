@@ -14,5 +14,5 @@ RUN mkdir /usr/src/yaml-cpp/release \
     && cmake -DCMAKE_CXX_FLAGS_RELEASE="-Os" -DCMAKE_INSTALL_PREFIX="{{ install_dir }}" -DBUILD_SHARED_LIBS=TRUE -DCMAKE_INSTALL_RPATH="{{ install_dir }}/lib" {% block build_facter_yaml_cpp_cmake_options %}{% endblock %} .. \
     && make -j "$(nproc)" \
     && make install \
-    && make distclean
+    && make clean
 {% endif %}

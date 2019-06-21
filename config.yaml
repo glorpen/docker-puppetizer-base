@@ -2,9 +2,13 @@ sha256:
   ruby:
     2.5.3:  1cc9d0359a8ea35fc6111ec830d12e60168f3b9b305a3c2578357d360fcf306f
   puppet:
+    # curl -L https://github.com/puppetlabs/puppet/archive/6.5.0.tar.gz  | sha256sum -
     6.1.0:  8f917f7fd4825889181ae810b03f5c76718f73fd6d3c2a2cc0475a0ffe70ff9c
+    6.5.0:  7eef940dba560084e618377912f6b440ddaa4194bd8d4078d985955faa16596e
   facter:
+    # curl -L https://github.com/puppetlabs/facter/archive/3.14.0.tar.gz  | sha256sum -
     3.12.2: b6ad08291d69130b4084f8ae6b57ffce0f52ef01f1a80c5a904226146c48d8cb
+    3.14.0: 09eb12b9f68b5ff482cb85b707db563c7bdc135a729c945e66d2fbdb9680a7b8
   leatherman:
     1.5.4:  f4b777de15f89ee0f5db99d065ca96290559e91ceadee39671e0f68318c84f97
   cpp-hocon:
@@ -57,34 +61,44 @@ package_sets:
     boost: 1.66.0
     yaml-cpp: 0.6.2
     runit: 2.1.2
+  6.5.0:
+    puppet:   6.5.0
+    facter:   3.14.0
+    hiera:    3.5.0
+    ruby:     2.5.3
+    ruby_gems:    3.0.2
+    ruby_bundler: 1.17.3
+    leatherman: 1.5.4
+    cpp-hocon: 0.2.1
+    boost: 1.66.0
+    yaml-cpp: 0.6.2
+    runit: 2.1.2
 
-targets:
-  centos-7:
-    source-image: centos:7.6.1810
-    system: centos
-    puppet-package-version: 6.1.0
-    system-packages: []
-    
-  alpine-3.8:
-    source-image: alpine:3.8
-    system: alpine
-    puppet-package-version: 6.1.0
-    system-packages:
-#      - boost
-      - yaml-cpp
-  
-  fedora-29:
-    source-image: fedora:29
-    system: fedora
-    puppet-package-version: 6.1.0
-    system-packages:
-      - boost
-      - yaml-cpp
-  
-  debian-9.6-slim:
-    source-image: debian:9.6-slim
-    system: debian
-    puppet-package-version: 6.1.0
-    system-packages:
-      - boost
-      - yaml-cpp
+builds:
+  version: "1.0.0"
+  targets:
+    "centos7":
+      source-image: centos:7.6.1810
+      system: centos
+      puppet-package-version: 6.1.0
+      system-packages: []
+    "alpine3.8":
+      source-image: alpine:3.8
+      system: alpine
+      puppet-package-version: 6.1.0
+      system-packages:
+        - yaml-cpp
+    "fedora29":
+      source-image: fedora:29
+      system: fedora
+      puppet-package-version: 6.1.0
+      system-packages:
+        - boost
+        - yaml-cpp
+    "debian9.6":
+      source-image: debian:9.6-slim
+      system: debian
+      puppet-package-version: 6.1.0
+      system-packages:
+        - boost
+        - yaml-cpp
