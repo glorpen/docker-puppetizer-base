@@ -64,3 +64,9 @@ RUN /opt/puppetizer/bin/puppet module install puppetlabs-apk --target-dir {{ ins
     && wget -O - https://github.com/puppetlabs/puppetlabs-apk/pull/4.diff | patch -p1
 {% endblock %}
 
+{% block build_facter_cpp_hocon_cmake_options -%}
+-DCMAKE_CXX_FLAGS_RELEASE="-Os -Wno-error=deprecated-declarations"
+{%- endblock %}
+{% block build_facter_facter_cmake_options -%}
+-DCMAKE_CXX_FLAGS_RELEASE="-Os -Wno-error=deprecated-declarations"
+{%- endblock %}

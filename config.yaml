@@ -70,7 +70,7 @@ targets:
     system: alpine
     puppet-package-version: 6.1.0
     system-packages:
-      - boost
+#      - boost
       - yaml-cpp
   
   fedora-29:
