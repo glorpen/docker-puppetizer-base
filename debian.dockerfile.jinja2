@@ -6,12 +6,20 @@
 {% set packages_base_boost %}"libboost-program-options*.0" "libboost-locale*.0" "libboost-filesystem*.0" "libboost-date-time*.0" "libboost-regex*.0" "libboost-atomic*.0" "libboost-log*.0"{% endset %}
 {% set packages_base_leatherman %}leatherman{% endset %}
 {% set packages_base_cpp_hocon %}cpp-hocon{% endset %}
+
+{% if system_version < v('10.0.0') %}
 {% set packages_base_yaml_cpp %}libyaml-cpp0.5v5{% endset %}
+{% else %}
+{% set packages_base_yaml_cpp %}libyaml-cpp0.6{% endset %}
+{% endif %}
 
 {% set packages_base | oneline %}
-bzip2 ca-certificates libffi6 procps "libyaml-0-*" zlib1g
-libcrypto++6 libgdbm3 libreadline7 libssl1.1
-libcurl3
+bzip2 ca-certificates libffi6 procps
+zlib1g
+libcrypto++6
+{% if system_version < v('10.0.0') %}libgdbm3{% else %}libgdbm6{% endif %}
+libreadline7 libssl1.1
+{% if system_version < v('10.0.0') %}libcurl3{% else %}libcurl4{% endif %}
 tar xz-utils
 {% endset %}
 
@@ -45,3 +53,13 @@ zlib1g-dev
 cmake g++ libcurl4-openssl-dev
 wget
 {% endset %}
+
+{% block build_facter_leatherman_cmake_options -%}
+-DCMAKE_CXX_FLAGS_RELEASE="-Os{% if system_version >= v('10.0.0') %} -Wno-error=class-memaccess -Wno-error=ignored-qualifiers{% endif %}"
+{%- endblock %}
+{% block build_facter_cpp_hocon_cmake_options -%}
+-DCMAKE_CXX_FLAGS_RELEASE="-Os{% if system_version >= v('10.0.0') %} -Wno-error=catch-value={% endif %}"
+{%- endblock %}
+{% block build_facter_facter_cmake_options -%}
+-DCMAKE_CXX_FLAGS_RELEASE="-Os{% if system_version >= v('10.0.0') %} -Wno-error=catch-value={% endif %}"
+{%- endblock %}

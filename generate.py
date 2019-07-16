@@ -11,6 +11,7 @@ import re
 from jinja2 import nodes
 from jinja2.ext import Extension
 import datetime
+import semver
 
 re_line = re.compile("(\s*\n\s*)+")
 def filter_oneline(value):
@@ -61,6 +62,7 @@ class Config(object):
                     values = fields_simple.Dict({
                         "source-image": fields_simple.String(),
                         "system": fields_simple.String(),
+                        "system-version": fields_version.Version(),
                         "puppet-package-version": fields_simple.String(),
                         "system-packages": fields_simple.List(fields_simple.String())
                     })
@@ -85,6 +87,7 @@ class Config(object):
             "puppet_package": pkg,
             "install_dir": install_dir,
             "system": s["system"],
+            "system_version": s["system-version"],
             "system_packages": s["system-packages"],
             "source_image": s["source-image"],
             "version": self.version
@@ -114,7 +117,8 @@ class Renderer(object):
         )
         self.env.filters["oneline"] = filter_oneline
         self.env.globals.update(
-            now=datetime.datetime.utcnow()
+            now=datetime.datetime.utcnow(),
+            v=semver.parse_version_info
         )
     
     def render(self, name):

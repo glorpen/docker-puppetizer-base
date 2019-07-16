@@ -75,30 +75,59 @@ package_sets:
     runit: 2.1.2
 
 builds:
-  version: "1.0.0"
+  version: "2.2.0"
   targets:
-    "centos7":
+    "centos7-6.5.0":
       source-image: centos:7.6.1810
       system: centos
-      puppet-package-version: 6.1.0
+      system-version: 7.6.1810
+      puppet-package-version: 6.5.0
       system-packages: []
-    "alpine3.8":
+    "alpine3.8-6.5.0":
       source-image: alpine:3.8
       system: alpine
-      puppet-package-version: 6.1.0
-      system-packages:
-        - yaml-cpp
-    "fedora29":
-      source-image: fedora:29
-      system: fedora
-      puppet-package-version: 6.1.0
+      system-version: 3.8.99
+      puppet-package-version: 6.5.0
       system-packages:
         - boost
         - yaml-cpp
-    "debian9.6":
-      source-image: debian:9.6-slim
+    "alpine3.9-6.5.0":
+      source-image: alpine:3.9
+      system: alpine
+      system-version: 3.9.99
+      puppet-package-version: 6.5.0
+      system-packages:
+        - boost
+        - yaml-cpp
+    "alpine3.10-6.5.0":
+      source-image: alpine:3.10
+      system: alpine
+      system-version: 3.10.99
+      puppet-package-version: 6.5.0
+      system-packages:
+        - boost
+        - yaml-cpp
+    "fedora29-6.5.0":
+      source-image: fedora:29
+      system: fedora
+      system-version: 29.99.99
+      puppet-package-version: 6.5.0
+      system-packages:
+        - boost
+        - yaml-cpp
+    "debian9-6.5.0":
+      source-image: debian:9.9-slim
       system: debian
-      puppet-package-version: 6.1.0
+      system-version: 9.9.99
+      puppet-package-version: 6.5.0
+      system-packages:
+        - boost
+        - yaml-cpp
+    "debian10-6.5.0":
+      source-image: debian:10-slim
+      system: debian
+      system-version: 10.99.99
+      puppet-package-version: 6.5.0
       system-packages:
         - boost
         - yaml-cpp
