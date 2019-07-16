@@ -1,21 +1,31 @@
 sha256:
   ruby:
+    # curl -L https://cache.ruby-lang.org/pub/ruby/2.5/ruby-2.5.3.tar.xz | sha256sum -
+    2.4.5:  2f0cdcce9989f63ef7c2939bdb17b1ef244c4f384d85b8531d60e73d8cc31eeb
     2.5.3:  1cc9d0359a8ea35fc6111ec830d12e60168f3b9b305a3c2578357d360fcf306f
   puppet:
-    # curl -L https://github.com/puppetlabs/puppet/archive/6.5.0.tar.gz  | sha256sum -
+    # curl -L https://github.com/puppetlabs/puppet/archive/6.5.0.tar.gz | sha256sum -
+    5.5.10: 655e6a3a77323e84c5668b081a9d030c775d033f99d69b50eb3714f5c57d5040
     6.1.0:  8f917f7fd4825889181ae810b03f5c76718f73fd6d3c2a2cc0475a0ffe70ff9c
     6.5.0:  7eef940dba560084e618377912f6b440ddaa4194bd8d4078d985955faa16596e
+    6.6.0:  1e8d44ac576d463ea209a2324386bfd891b7a3e997882a383bd1178bead3350f
   facter:
-    # curl -L https://github.com/puppetlabs/facter/archive/3.14.0.tar.gz  | sha256sum -
+    # curl -L https://github.com/puppetlabs/facter/archive/3.14.0.tar.gz | sha256sum -
+    3.11.6: 6f015d27f53cbf0529925536f7c90029fdbb508bb69395fa313e84c80bfea420
     3.12.2: b6ad08291d69130b4084f8ae6b57ffce0f52ef01f1a80c5a904226146c48d8cb
     3.14.0: 09eb12b9f68b5ff482cb85b707db563c7bdc135a729c945e66d2fbdb9680a7b8
+    3.14.1: a837d4459c28977b8c8ad421a9cfab5f526ee635b8baa3b2131e396befcd82f6
   leatherman:
+    # curl -L https://github.com/puppetlabs/leatherman/archive/1.7.0.tar.gz | sha256sum -
     1.5.4:  f4b777de15f89ee0f5db99d065ca96290559e91ceadee39671e0f68318c84f97
+    1.7.0:  a89e8c01f181cb8edb3fe0b2c5e2f2f04be37ce2bc320389afa4ca2675e49841
   cpp-hocon:
     0.2.1:  6ddd08f0ec7915fff2f07385926a137b09f6ff58506a7467fa2c954585479e36
   boost:
-    1.69.0: 9a2c2819310839ea373f42d69e733c339b4e9a19deab6bfec448281554aa4dbb
+    # curl -L https://dl.bintray.com/boostorg/release/1.69.0/source/boost_1_69_0.tar.gz | sha256sum -
     1.66.0: bd0df411efd9a585e5a2212275f8762079fed8842264954675a4fddc46cfcf60
+    1.69.0: 9a2c2819310839ea373f42d69e733c339b4e9a19deab6bfec448281554aa4dbb
+    1.70.0: 882b48708d211a5f48e60b0124cf5863c1534cd544ecd0664bb534a4b5d506e9
   yaml-cpp:
     0.6.2: e4d8560e163c3d875fd5d9e5542b5fd5bec810febdcba61481fe5fc4e6b1fd05
   runit:
@@ -32,7 +42,8 @@ package_sets:
     ruby_bundler: 1.17.3
     leatherman: 1.5.4
     cpp-hocon: 0.2.1
-    boost: 1.54.0
+    #boost: 1.54.0
+    boost: 1.66.0
     yaml-cpp: 0.6.2
     runit: 2.1.2
 
@@ -73,61 +84,123 @@ package_sets:
     boost: 1.66.0
     yaml-cpp: 0.6.2
     runit: 2.1.2
+  6.6.0:
+    puppet:   6.6.0
+    facter:   3.14.1
+    hiera:    3.5.0
+    ruby:     2.5.3
+    ruby_gems:    3.0.2
+    ruby_bundler: 1.17.3
+    leatherman: 1.7.0
+    cpp-hocon: 0.2.1
+    boost: 1.69.0
+    yaml-cpp: 0.6.2
+    runit: 2.1.2
 
 builds:
   version: "2.2.0"
-  targets:
-    "centos7-6.5.0":
-      source-image: centos:7.6.1810
-      system: centos
-      system-version: 7.6.1810
-      puppet-package-version: 6.5.0
-      system-packages: []
-    "alpine3.8-6.5.0":
-      source-image: alpine:3.8
-      system: alpine
-      system-version: 3.8.99
-      puppet-package-version: 6.5.0
-      system-packages:
-        - boost
-        - yaml-cpp
-    "alpine3.9-6.5.0":
-      source-image: alpine:3.9
-      system: alpine
-      system-version: 3.9.99
-      puppet-package-version: 6.5.0
-      system-packages:
-        - boost
-        - yaml-cpp
-    "alpine3.10-6.5.0":
-      source-image: alpine:3.10
-      system: alpine
-      system-version: 3.10.99
-      puppet-package-version: 6.5.0
-      system-packages:
-        - boost
-        - yaml-cpp
-    "fedora29-6.5.0":
-      source-image: fedora:29
-      system: fedora
-      system-version: 29.99.99
-      puppet-package-version: 6.5.0
-      system-packages:
-        - boost
-        - yaml-cpp
-    "debian9-6.5.0":
-      source-image: debian:9.9-slim
-      system: debian
-      system-version: 9.9.99
-      puppet-package-version: 6.5.0
-      system-packages:
-        - boost
-        - yaml-cpp
-    "debian10-6.5.0":
-      source-image: debian:10-slim
-      system: debian
-      system-version: 10.99.99
-      puppet-package-version: 6.5.0
-      system-packages:
-        - boost
-        - yaml-cpp
+  puppet-packages:
+    5.5.10:
+      "centos7":
+        source-image: centos:7.6.1810
+        system: centos
+        system-version: 7.6.1810
+        system-packages: []
+      "alpine3.8":
+        source-image: alpine:3.8
+        system: alpine
+        system-version: 3.8.99
+        system-packages:
+          - boost
+          - yaml-cpp
+      "fedora29":
+        source-image: fedora:29
+        system: fedora
+        system-version: 29.99.99
+        system-packages:
+          - boost
+          - yaml-cpp
+      "debian9":
+        source-image: debian:9.9-slim
+        system: debian
+        system-version: 9.9.99
+        system-packages:
+          - boost
+          - yaml-cpp
+
+    6.5.0:
+      "centos7":
+        source-image: centos:7.6.1810
+        system: centos
+        system-version: 7.6.1810
+        system-packages: []
+      "alpine3.8":
+        source-image: alpine:3.8
+        system: alpine
+        system-version: 3.8.99
+        system-packages:
+          - boost
+          - yaml-cpp
+      "alpine3.9":
+        source-image: alpine:3.9
+        system: alpine
+        system-version: 3.9.99
+        system-packages:
+          - boost
+          - yaml-cpp
+      "alpine3.10":
+        source-image: alpine:3.10
+        system: alpine
+        system-version: 3.10.99
+        system-packages:
+          - boost
+          - yaml-cpp
+      "fedora29":
+        source-image: fedora:29
+        system: fedora
+        system-version: 29.99.99
+        system-packages:
+          - boost
+          - yaml-cpp
+      "debian9":
+        source-image: debian:9.9-slim
+        system: debian
+        system-version: 9.9.99
+        system-packages:
+          - boost
+          - yaml-cpp
+      "debian10":
+        source-image: debian:10-slim
+        system: debian
+        system-version: 10.99.99
+        system-packages:
+          - boost
+          - yaml-cpp
+
+    6.6.0:
+      "centos7":
+        source-image: centos:7.6.1810
+        system: centos
+        system-version: 7.6.1810
+        system-packages: []
+      "alpine3.10":
+        source-image: alpine:3.10
+        system: alpine
+        system-version: 3.10.99
+        system-packages:
+          - boost
+          - yaml-cpp
+      "fedora30":
+        source-image: fedora:30
+        system: fedora
+        system-version: 30.99.99
+        system-packages:
+          - boost
+          - yaml-cpp
+      "debian10":
+        source-image: debian:10-slim
+        system: debian
+        system-version: 10.99.99
+        system-packages:
+          - boost
+          - yaml-cpp

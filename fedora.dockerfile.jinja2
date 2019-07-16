@@ -49,11 +49,11 @@ wget patch which findutils
 {% endset %}
 
 {% block build_facter_leatherman_cmake_options -%}
--DCMAKE_CXX_FLAGS="-Os -Wno-error=class-memaccess -Wno-error=ignored-qualifiers"
+-DCMAKE_CXX_FLAGS="-Os -Wno-error=class-memaccess -Wno-error=ignored-qualifiers{% if system_version >= v('30.0.0') %} -Wno-error{% endif %}"
 {%- endblock %}
 {% block build_facter_cpp_hocon_cmake_options -%}
 -DCMAKE_CXX_FLAGS_RELEASE="-Os -Wno-error=catch-value="
 {%- endblock %}
 {% block build_facter_facter_cmake_options -%}
--DCMAKE_CXX_FLAGS_RELEASE="-Os -Wno-error=catch-value="
+-DCMAKE_CXX_FLAGS_RELEASE="-Os -Wno-error=catch-value={% if system_version >= v('30.0.0') %} -Wno-error{% endif %}"
 {%- endblock %}

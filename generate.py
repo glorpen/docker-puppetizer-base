@@ -12,6 +12,7 @@ from jinja2 import nodes
 from jinja2.ext import Extension
 import datetime
 import semver
+import collections
 
 re_line = re.compile("(\s*\n\s*)+")
 def filter_oneline(value):
@@ -33,6 +34,8 @@ class Config(object):
     
     _pkg_keys = ('puppet', 'facter', 'ruby', 'leatherman', 'cpp-hocon', 'boost', 'yaml-cpp', 'runit')
     # hiera5 is included in puppet
+
+    _targets = None
     
     def __init__(self, conf_path):
         super(Config, self).__init__()
@@ -44,9 +47,25 @@ class Config(object):
         
         self._checksums = cfg.get("sha256")
         self._packages = cfg.get("package_sets")
-        self._targets = cfg.get("builds")["targets"]
+        self._images = cfg.get("builds")["puppet-packages"]
         self._build_version = cfg.get("builds")["version"]
     
+    @property
+    def targets(self):
+        if self._targets is not None:
+            return self._targets
+        
+        ret = collections.OrderedDict()
+        for puppet_package, targets in self._images.items():
+            for t in targets.keys():
+                ret["%s-%s" % (t, puppet_package)] = {
+                    "puppet-package-version": puppet_package,
+                    "target": t
+                }
+        self._targets = ret
+
+        return self._targets
+
     def _load(self, config_path):
         loader = loaders.YamlLoader(filepath=config_path)
         spec = fields_simple.Dict({
@@ -57,26 +76,30 @@ class Config(object):
             ),
             "builds": fields_simple.Dict({
                 "version": fields_version.Version(),
-                "targets": fields_simple.Dict(
+                "puppet-packages": fields_simple.Dict(
                     keys = fields_simple.String(),
-                    values = fields_simple.Dict({
-                        "source-image": fields_simple.String(),
-                        "system": fields_simple.String(),
-                        "system-version": fields_version.Version(),
-                        "puppet-package-version": fields_simple.String(),
-                        "system-packages": fields_simple.List(fields_simple.String())
-                    })
-                )
+                    values = fields_simple.Dict(
+                        keys = fields_simple.String(),
+                        values = fields_simple.Dict({
+                            "source-image": fields_simple.String(),
+                            "system": fields_simple.String(),
+                            "system-version": fields_version.Version(),
+                            "system-packages": fields_simple.List(fields_simple.String())
+                        })
+                    )
+                ),
             })
         })
         return GConfig(loader=loader, spec=spec).finalize()
 
     def __getitem__(self, name):
         
-        s = self._targets[name]
+        info = self.targets[name]
+
+        s = self._images[info["puppet-package-version"]][info["target"]]
         pkg = {}
         
-        for k,v in self._packages[s["puppet-package-version"]].items():
+        for k,v in self._packages[info["puppet-package-version"]].items():
             pkg[k] = {
                 "version": v
             }
@@ -94,9 +117,6 @@ class Config(object):
         }
         return ret
     
-    @property
-    def targets(self):
-        return tuple(self._targets.keys())
     @property
     def version(self):
         return self._build_version
@@ -134,7 +154,7 @@ def cli_render(r, ns):
 
 def cli_info(r, ns):
     if ns.mode == "targets":
-        sys.stdout.write("\n".join(r.config.targets)+"\n")
+        sys.stdout.write("\n".join(r.config.targets.keys())+"\n")
     elif ns.mode == "version":
         sys.stdout.write(str(r.config.version)+"\n")
 
