@@ -22,10 +22,13 @@ Puppet::Type.type(:service).provide :puppetizer, :parent => :runit do
     * restart
     * status
 
-
   EOT
 
   commands :sv => '/opt/puppetizer/bin/sv'
+
+  def servicedefdir
+    "/opt/puppetizer/etc/service"
+  end
 
   class << self
     def defpath
@@ -37,6 +40,10 @@ Puppet::Type.type(:service).provide :puppetizer, :parent => :runit do
     true
   end
 
+  def down_file
+    File.join(servicedefdir, resource[:name], "down")
+  end
+
   def sv(*args)
     execute([command(:sv)] + args)
   end
@@ -45,27 +52,88 @@ Puppet::Type.type(:service).provide :puppetizer, :parent => :runit do
     "/opt/puppetizer/service"
   end
 
-  def start
-    if enabled? != :true
-        enable
+  def toggle_down(present)
+    unless Puppet::FileSystem.exist?(File.dirname(down_file))
+      raise Puppet::Error.new( "Could not toggle service mode #{resource.ref}: Service directory #{down_file} does not exist" )
+    end
+
+    if present
+      unless Puppet::FileSystem.exist?(down_file)
+        Puppet::FileSystem.touch(down_file)
+      end
+    else
+      if Puppet::FileSystem.exist?(down_file)
+        Puppet::FileSystem.unlink(down_file)
+      end
+    end
+  end
+
+  def installed?
+    Puppet::Type::Service::ProviderDaemontools.instance_method(:enabled?).bind(self).call
+  end
+
+  def install
+    if installed? != :true
+      Puppet::Type::Service::ProviderDaemontools.instance_method(:enable).bind(self).call
+
+      if Facter.value('puppetizer')['running']
         # Work around issue #4480
         # runsvdir takes up to 5 seconds to recognize
         # the symlink created by this call to enable
         #TRANSLATORS 'runsvdir' is a linux service name and should not be translated
         Puppet.info _("Waiting up to 5 seconds for runsvdir to discover service %{service}") % { service: self.service }
+
+        lastError = nil
         5.times do
           sleep 1
           begin
-            z = sv "status", self.service
+            sv "status", self.service
+            lastError = nil
             break
           rescue Puppet::ExecutionFailure => detail
-            unless detail.message =~ /fail: .*runsv not running$/
-              raise Puppet::Error.new( "Could not enable service #{resource.ref}: #{detail}", detail )
-            end
+            lastError = detail
           end
         end
+
+        if lastError
+          raise Puppet::Error.new( "Could not install service #{resource.ref}: #{lastError}", lastError )
+        end
+      end
     end
-    sv "start", self.service
   end
-  
+
+  def disable
+    toggle_down(true)
+    install
+  end
+
+  def enabled?
+    return Puppet::FileSystem.exist?(down_file) ? :false : :true
+  end
+
+  def enable
+    toggle_down(false)
+    install
+  end
+
+  def start
+    install
+    if Facter.value('puppetizer')['running']
+      sv "start", self.service
+    end
+  end
+
+  def stop
+    install
+    if Facter.value('puppetizer')['running']
+      super
+    end
+  end
+
+  def restart
+    install
+    if Facter.value('puppetizer')['running']
+      super
+    end
+  end
 end
