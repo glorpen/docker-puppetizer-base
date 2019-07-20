@@ -20,7 +20,7 @@ libcrypto++6
 {% if system_version < v('10.0.0') %}libgdbm3{% else %}libgdbm6{% endif %}
 libreadline7 libssl1.1
 {% if system_version < v('10.0.0') %}libcurl3{% else %}libcurl4{% endif %}
-tar xz-utils
+tar xz-utils libyaml-0-2
 {% endset %}
 
 {% set packages_dev_boost %}libboost-program-options-dev libboost-locale-dev libboost-filesystem-dev libboost-date-time-dev libboost-regex-dev libboost-atomic-dev libboost-log-dev{% endset %}
