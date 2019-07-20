@@ -26,14 +26,8 @@ Puppet::Type.type(:service).provide :puppetizer, :parent => :runit do
 
   commands :sv => '/opt/puppetizer/bin/sv'
 
-  def servicedefdir
+  def self.defpath
     "/opt/puppetizer/etc/service"
-  end
-
-  class << self
-    def defpath
-      "/opt/puppetizer/etc/service"
-    end
   end
 
   def default
@@ -41,7 +35,7 @@ Puppet::Type.type(:service).provide :puppetizer, :parent => :runit do
   end
 
   def down_file
-    File.join(servicedefdir, resource[:name], "down")
+    File.join(self.class.defpath, resource[:name], "down")
   end
 
   def sv(*args)
