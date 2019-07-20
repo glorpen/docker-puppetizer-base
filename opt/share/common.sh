@@ -25,7 +25,7 @@ puppetizer_initialized_token="${puppetizer_root_dir}/initialized" #
 puppet_apply()
 {
 	env="${1:-production}"
-	if [ "x$PUPPETIZER_DEBUG" == "xy" ] || [ "x${env}" == "xbuild" ];
+	if [ "x$PUPPETIZER_DEBUG" = "xy" ] || [ "x${env}" = "xbuild" ];
 	then
 		debug_opts="--verbose --strict=warning"
 	else
@@ -40,7 +40,7 @@ puppet_apply()
 	
 	#return $puppet_ret
 	
-	if [ $puppet_ret == 2 ] || [ $puppet_ret == 0 ];
+	if [ $puppet_ret -eq 2 ] || [ $puppet_ret -eq 0 ];
 	then
 		return 0
 	else
