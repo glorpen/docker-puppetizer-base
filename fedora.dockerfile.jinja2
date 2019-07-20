@@ -1,6 +1,6 @@
 {% extends "base.dockerfile.jinja2" %}
 
-{% set packages_cmd_install %}dnf install -y{% endset %}
+{% set packages_cmd_install %}dnf install -y --disablerepo=updates{% endset %}
 {% set packages_cmd_clean %}dnf clean all && rm -rfv /var/cache/dnf{% endset %}
 
 {% set packages_base_boost %}boost-program-options boost-locale boost-filesystem boost-date-time boost-regex boost-atomic boost-log{% endset %}
@@ -12,7 +12,7 @@
 bzip2 ca-certificates libffi procps-ng libyaml zlib
 gdbm readline openssl-libs
 libcurl
-tar xz
+tar xz findutils
 {% endset %}
 
 {% set packages_dev_boost %}boost-devel{% endset %}
@@ -45,7 +45,7 @@ libyaml-devel
 zlib-devel
 {# other #}
 cmake gcc-c++ libcurl-devel
-wget patch which findutils
+wget patch which
 {% endset %}
 
 {% block build_facter_leatherman_cmake_options -%}
