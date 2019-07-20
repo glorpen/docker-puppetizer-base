@@ -102,7 +102,11 @@ Puppet::Type.type(:service).provide :puppetizer, :parent => :runit do
   end
 
   def enabled?
-    return Puppet::FileSystem.exist?(down_file) ? :false : :true
+    if installed? == :true
+      Puppet::FileSystem.exist?(down_file) ? :false : :true
+    else
+      :absent
+    end
   end
 
   def enable
