@@ -98,7 +98,7 @@ package_sets:
     runit: 2.1.2
 
 builds:
-  version: "2.2.0"
+  version: "2.3.0"
   puppet-packages:
     5.5.10:
       "centos7":
@@ -111,7 +111,6 @@ builds:
         system: alpine
         system-version: 3.8.99
         system-packages:
-          - boost
           - yaml-cpp
       "fedora29":
         source-image: fedora:29
@@ -124,55 +123,6 @@ builds:
         source-image: debian:9.9-slim
         system: debian
         system-version: 9.9.99
-        system-packages:
-          - boost
-          - yaml-cpp
-
-    6.5.0:
-      "centos7":
-        source-image: centos:7.6.1810
-        system: centos
-        system-version: 7.6.1810
-        system-packages: []
-      "alpine3.8":
-        source-image: alpine:3.8
-        system: alpine
-        system-version: 3.8.99
-        system-packages:
-          - boost
-          - yaml-cpp
-      "alpine3.9":
-        source-image: alpine:3.9
-        system: alpine
-        system-version: 3.9.99
-        system-packages:
-          - boost
-          - yaml-cpp
-      "alpine3.10":
-        source-image: alpine:3.10
-        system: alpine
-        system-version: 3.10.99
-        system-packages:
-          - boost
-          - yaml-cpp
-      "fedora29":
-        source-image: fedora:29
-        system: fedora
-        system-version: 29.99.99
-        system-packages:
-          - boost
-          - yaml-cpp
-      "debian9":
-        source-image: debian:9.9-slim
-        system: debian
-        system-version: 9.9.99
-        system-packages:
-          - boost
-          - yaml-cpp
-      "debian10":
-        source-image: debian:10-slim
-        system: debian
-        system-version: 10.99.99
         system-packages:
           - boost
           - yaml-cpp
@@ -183,12 +133,17 @@ builds:
         system: centos
         system-version: 7.6.1810
         system-packages: []
+      "alpine3.9":
+        source-image: alpine:3.9
+        system: alpine
+        system-version: 3.9.99
+        system-packages:
+          - yaml-cpp
       "alpine3.10":
         source-image: alpine:3.10
         system: alpine
         system-version: 3.10.99
         system-packages:
-          - boost
           - yaml-cpp
       "fedora30":
         source-image: fedora:30
