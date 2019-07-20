@@ -1,7 +1,7 @@
 {% extends "base.dockerfile.jinja2" %}
 
-{% set packages_cmd_install %}yum install -y{% endset %}
-{% set packages_cmd_clean %}rm -rfv /var/cache/yml{% endset %}
+{% set packages_cmd_install %}yum install -y --disablerepo=updates{% endset %}
+{% set packages_cmd_clean %}yum clean all && rm -rf /var/cache/yum/*{% endset %}
 
 {% set packages_base | oneline %}
 bzip2 ca-certificates libffi procps-ng libyaml zlib
