@@ -13,14 +13,22 @@ do_init(){
     echo "Container marked as initialized"
 }
 
+_wait_for_runsvdir(){
+    while :;
+    do
+        pkill -0 -f "${runsvdir}"
+        if [ $? -eq 0 ];
+        then
+            return 0
+        fi
+        sleep 1s
+    done
+}
+
 delayed_start(){
     . /opt/puppetizer/share/common.sh
     
-    while :;
-    do
-        pkill -0 -f "${runsvdir}" && ( do_init; exit 0 ) 
-        sleep 1s
-    done
+    _wait_for_runsvdir && do_init
 }
 
 delayed_start &
