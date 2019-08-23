@@ -17,6 +17,13 @@ RUN wget -O /root/facter.tar.gz "https://github.com/puppetlabs/facter/archive/{{
 RUN sed -i /usr/src/facter/cmake/FindCPPHOCON.cmake -e 's/libcpp-hocon.a/libcpp-hocon.so/g' \
     && sed -i /usr/src/facter/lib/gemspec.in -e "s/required_ruby_version.*/required_ruby_version = '>= 1.9.0'/g"
 
+{# disable some facts #}
+RUN sed -i /usr/src/facter/lib/src/facts/linux/collection.cc \
+    -e '/.*networking_resolver.*/d' -e '/.*disk_resolver.*/d' -e '/.*dmi_resolver.*/d' -e '/.*filesystem_resolver.*/d' \
+    -e '/.*uptime_resolver.*/d' -e '/.*load_average_resolver.*/d' -e '/.*virtualization_resolver.*/d' -e '/.*xen_resolver.*/d' \
+    && sed -i /usr/src/facter/lib/src/facts/collection.cc \
+    -e '/.*ec2_resolver.*/d' -e '/.*gce_resolver.*/d' -e '/.*hypervisors_resolver.*/d'
+
 {{ paths.fix_puppetlabs_paths('/usr/src/facter') }}
 
 {% endblock %}
