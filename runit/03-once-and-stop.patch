@@ -1,5 +1,33 @@
---- a/runsv.c	2019-08-28 20:33:29.380925993 +0200
-+++ b/runsv.c	2019-08-28 21:35:35.312805180 +0200
+diff -Nuwr src-org/runit.h src/runit.h
+--- src-org/runit.h	2019-08-28 21:42:22.070791991 +0200
++++ src/runit.h	2019-08-28 21:32:44.525810718 +0200
+@@ -2,3 +2,4 @@
+ #define STOPIT "%INSTALL_DIR%/etc/runit/stopit"
+ #define REBOOT "%INSTALL_DIR%/etc/runit/reboot"
+ #define CTRLALTDEL "%INSTALL_DIR%/etc/runit/reload"
++#define FINISHIT "%INSTALL_DIR%/etc/runit/finish"
+diff -Nuwr src-org/runit-init.c src/runit-init.c
+--- src-org/runit-init.c	2014-08-10 20:22:34.000000000 +0200
++++ src/runit-init.c	2019-08-28 21:40:49.992794977 +0200
+@@ -17,14 +17,7 @@
+ void usage(void) { strerr_die4x(0, "usage: ", progname, USAGE, "\n"); }
+ 
+ void runit_halt () {
+-  if (open_trunc(STOPIT) == -1)
+-    strerr_die4sys(111, FATAL, "unable to create ", STOPIT, ": ");
+-  if (chmod(STOPIT, 0100) == -1)
+-    strerr_die4sys(111, FATAL, "unable to chmod ", STOPIT, ": ");
+-  if (chmod(REBOOT, 0) == -1)
+-    if (errno != error_noent)
+-      strerr_die4sys(111, FATAL, "unable to chmod ", REBOOT, ": ");
+-  kill(1, sig_cont);
++  kill(1, sig_term);
+   _exit(0);
+ }
+ 
+diff -Nuwr src-org/runsv.c src/runsv.c
+--- src-org/runsv.c	2019-08-28 20:33:29.380925993 +0200
++++ src/runsv.c	2019-08-28 23:36:57.127569068 +0200
 @@ -19,6 +19,7 @@
  #include "buffer.h"
  #include "fmt.h"
@@ -17,16 +45,16 @@
      code[fmt_ulong(code, wait_exitcode(s->wstat))] =0;
      run[1] =wait_crashed(s->wstat) ? "-1" : code;
      stat[fmt_ulong(stat, s->wstat & 0xff)] =0;
-@@ -275,7 +276,7 @@
+@@ -313,6 +314,8 @@
+   if (s->state != S_FINISH) {
+     taia_now(&s->start);
+     s->state =S_RUN;
++  } else {
++    s->want =W_DOWN;
    }
-   else {
-     run[0] ="./run";
--    custom(s, 'u');
-+    custom(s, 'o');
-     run[1] =0;
-   }
- 
-@@ -559,7 +560,7 @@
+   s->pid =p;
+   pidchanged =1;
+@@ -559,7 +562,7 @@
          svd[0].wstat =wstat;
          svd[0].ctrl &=~C_TERM;
          if (svd[0].state != S_FINISH)
@@ -35,28 +63,3 @@
              close(fd);
              svd[0].state =S_FINISH;
              update_status(&svd[0]);
---- a/runit-init.c	2014-08-10 20:22:34.000000000 +0200
-+++ b/runit-init.c	2019-08-28 21:40:49.992794977 +0200
-@@ -17,14 +17,7 @@
- void usage(void) { strerr_die4x(0, "usage: ", progname, USAGE, "\n"); }
- 
- void runit_halt () {
--  if (open_trunc(STOPIT) == -1)
--    strerr_die4sys(111, FATAL, "unable to create ", STOPIT, ": ");
--  if (chmod(STOPIT, 0100) == -1)
--    strerr_die4sys(111, FATAL, "unable to chmod ", STOPIT, ": ");
--  if (chmod(REBOOT, 0) == -1)
--    if (errno != error_noent)
--      strerr_die4sys(111, FATAL, "unable to chmod ", REBOOT, ": ");
--  kill(1, sig_cont);
-+  kill(1, sig_term);
-   _exit(0);
- }
- 
---- a/runit.h	2019-08-28 21:42:22.070791991 +0200
-+++ b/runit.h	2019-08-28 21:32:44.525810718 +0200
-@@ -2,3 +2,4 @@
- #define STOPIT "%INSTALL_DIR%/etc/runit/stopit"
- #define REBOOT "%INSTALL_DIR%/etc/runit/reboot"
- #define CTRLALTDEL "%INSTALL_DIR%/etc/runit/reload"
-+#define FINISHIT "%INSTALL_DIR%/etc/runit/finish"
