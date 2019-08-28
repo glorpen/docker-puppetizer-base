@@ -2,9 +2,6 @@ define puppetizer::service (
   Optional[String] $run_content = undef,
   Optional[String] $run_source = undef,
 
-  Optional[String] $finish_content = undef,
-  Optional[String] $finish_source = undef,
-
   Boolean $autostart = false
 ){
   $_dir = "/opt/puppetizer/etc/service/${name}"
@@ -14,7 +11,7 @@ define puppetizer::service (
   }
 
   $file_opts = {
-    mode    => 'u=rwx,a=rx',
+    mode    => 'a=rx,u+w',
     backup  => false,
     notify  => Service[$title]
   }
@@ -23,14 +20,6 @@ define puppetizer::service (
     content => $run_content,
     source  => $run_source,
     *       => $file_opts
-  }
-
-  if $finish_content or $finish_source {
-    file { "${_dir}/finish":
-      content => $finish_content,
-      source  => $finish_source,
-      *       => $file_opts
-    }
   }
 
   $svc_opts = {

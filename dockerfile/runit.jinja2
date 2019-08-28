@@ -9,14 +9,12 @@ RUN wget -O /root/runit.tar.gz "http://smarden.org/runit/runit-{{ puppet_package
     && tar -xpf /root/runit.tar.gz -C /usr/src/runit --strip-components=2 \
     && rm /root/runit.tar.gz
 
-ADD runit/opt.patch.tpl /usr/src/runit
-ADD runit/quiet-logs.patch /usr/src/runit
+ADD runit/*.patch /usr/src/runit/
 
 RUN sed -i /usr/src/runit/src/Makefile -e 's/-static//g' \
     && sed -i /usr/src/runit/src/conf-cc -e 's/-O./-Os/g' \
     && cd /usr/src/runit/src \ 
-    && sed -e 's@%INSTALL_DIR%@{{ install_dir }}@g' /usr/src/runit/opt.patch.tpl | patch -p1 \
-    && cat /usr/src/runit/quiet-logs.patch | patch -p1 \
+    && cat /usr/src/runit/*.patch | sed -e 's@%INSTALL_DIR%@{{ install_dir }}@g' | patch -p1 \
     && cd /
 {% endblock %}
 

@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo "runit: service $(basename $(pwd)) exitted with code ${1}"
+/opt/puppetizer/bin/runit-init 0

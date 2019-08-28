@@ -98,7 +98,7 @@ package_sets:
     runit: 2.1.2
 
 builds:
-  version: "2.3.2"
+  version: "2.3.3"
   puppet-packages:
     5.5.10:
       "centos7":
