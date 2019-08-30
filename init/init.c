@@ -15,6 +15,7 @@
 #include <sys/un.h>
 
 #include "init.h"
+#include "control.h"
 #include "client.h"
 #include "service.h"
 #include "log.h"
@@ -54,9 +55,9 @@ static pid_t init_apply()
     return apply_pid;
 }
 
-bool init_handle_client_command(client_command_t *command, int socket)
+bool init_handle_client_command(control_command_t *command, int socket)
 {
-    client_reponse_t ret = CMD_RESPONSE_ERROR;
+    control_reponse_t ret = CMD_RESPONSE_ERROR;
     struct service *svc = service_find_by_name(command->name);
 
     if (svc == NULL) {
@@ -85,7 +86,7 @@ bool init_handle_client_command(client_command_t *command, int socket)
         }
     }
 
-    return send(socket, &ret, sizeof(client_reponse_t), 0) == sizeof(client_reponse_t);
+    return send(socket, &ret, sizeof(control_reponse_t), 0) == sizeof(control_reponse_t);
 }
 
 /**
@@ -184,20 +185,11 @@ static bool init_handle_signal(const struct signalfd_siginfo *info)
     return TRUE;
 }
 
-static int init_loop()
+static int init_create_signal_fd()
 {
-    struct epoll_event ev, events[10];
-    int changes = 0;
-    uint8_t buffer[sizeof(struct signalfd_siginfo)+128];
-    int exit_code = 0, ret;
-
-    int fd_signal, fd_epoll, fd_control, fd_client;
+    int fd_signal;
     sigset_t sigmask;
-    uint16_t i;
-    struct sockaddr_un saddr_server, saddr_client;
-    socklen_t peer_addr_size = sizeof(struct sockaddr_un);
-    bool errored;
-    
+
     sigemptyset(&sigmask);
     sigaddset(&sigmask, SIGTERM);
     sigaddset(&sigmask, SIGINT);
@@ -210,22 +202,28 @@ static int init_loop()
         fatal_errno("Failed to create signal descriptor", ERROR_FD_FAILED);
     }
 
+    return fd_signal;
+}
+
+static int init_loop()
+{
+    struct epoll_event ev, events[10];
+    int changes = 0;
+    uint8_t buffer[sizeof(struct signalfd_siginfo)+128];
+    int exit_code = 0;
+    socket_status_t sock_status;
+
+    int fd_signal, fd_epoll, fd_control, fd_client;
+    uint16_t i;
+    struct sockaddr_un saddr_client;
+    socklen_t peer_addr_size = sizeof(struct sockaddr_un);
+    bool errored;
+    
+    // make fd for reading required signals
+    fd_signal = init_create_signal_fd();
+
     // make fd for control socket
-    fd_control = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (fd_control == -1) {
-        fatal_errno("Failed to create control socket", ERROR_SOCKET_FAILED);
-    }
-    memset(&saddr_server, 0, sizeof(struct sockaddr_un));
-    saddr_server.sun_family = AF_UNIX;
-    strcpy(saddr_server.sun_path, PUPPETIZER_CONTROL_SOCKET);
-
-    if (bind(fd_control, (struct sockaddr *) &saddr_server, sizeof(struct sockaddr_un)) == -1) {
-        fatal_errno("Failed to bind control socket", ERROR_SOCKET_FAILED);
-    }
-
-    if (listen(fd_control, 5) == -1) {
-        fatal_errno("Failed to listen on control socket", ERROR_SOCKET_FAILED);
-    }
+    fd_control = control_listen(5);
     
     // setup epoll
     fd_epoll = epoll_create1(0);
@@ -281,19 +279,19 @@ static int init_loop()
             }
             else {
                 // client connections
-                ret = client_read_command((client_command_t*)buffer, events[i].data.fd);
-                if (ret == -1) {
+                sock_status = control_read_command((control_command_t*)buffer, events[i].data.fd);
+                if (sock_status == SOCKET_STATUS_EOF) {
                     // socket is closed
                     errored = TRUE;
                 } else {
-                    if (ret == FALSE) {
-                        log_warning("Failed to read client message");
-                        errored = TRUE;
-                    } else {
-                        if (!init_handle_client_command((client_command_t*)buffer, events[i].data.fd)) {
+                    if (sock_status == SOCKET_STATUS_OK) {
+                        if (!init_handle_client_command((control_command_t*)buffer, events[i].data.fd)) {
                             log_warning("Failed to handle client message");
                             errored = TRUE;
                         }
+                    } else {
+                        log_warning("Failed to read client message");
+                        errored = TRUE;
                     }
                 }
 
