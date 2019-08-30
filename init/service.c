@@ -18,7 +18,7 @@ static int service_files_filter(const struct dirent * f)
 {
     int offset = strlen(f->d_name) - 6;
     if (offset > 0) {
-        return strcmp(f->d_name + offset, ".start") != 0;
+        return strcmp(f->d_name + offset, ".start") == 0;
     } else {
         return 0;
     }
@@ -49,7 +49,9 @@ void service_create_all()
     services_count = count;
 
     for (i=0;i<count; i++) {
+        namelist[i]->d_name[strlen(namelist[i]->d_name)-6] = 0;
         services[i] = service_new(namelist[i]->d_name);
+        log_debug("Adding service %s", services[i]->name);
         free(namelist[i]);
     }
     free(namelist);
@@ -67,7 +69,7 @@ bool service_stop(struct service *svc)
 
     if (svc->state == STATE_UP) {
         svc->state = STATE_PENDING_DOWN;
-        cmd[snprintf(cmd, 255, "/opt/puppetizer/services/%s.stop", svc->name)] = 0;
+        cmd[snprintf(cmd, 255, PUPPETIZER_SERVICE_DIR "/%s.stop", svc->name)] = 0;
         sprintf(pid, "%d", svc->pid);
         // .stop powinno zrobić co się da by zatrzymać serwis "wkrótce"
         if (spawn2(cmd, pid) <= 0) {
@@ -87,7 +89,7 @@ bool service_start(struct service *svc)
 
     if (svc->state == STATE_DOWN) {
         svc->state = STATE_PENDING_UP;
-        cmd[snprintf(cmd, 255, "/opt/puppetizer/services/%s.start", svc->name)] = 0;
+        cmd[snprintf(cmd, 255, PUPPETIZER_SERVICE_DIR "/%s.start", svc->name)] = 0;
         pid_t pid = spawn2(cmd, NULL);
         if (pid > 0) {
             svc->pid = pid;

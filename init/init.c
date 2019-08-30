@@ -63,6 +63,7 @@ bool init_handle_client_command(control_command_t *command, int socket)
     if (svc == NULL) {
         log_warning("Service %s was not found", command->name);
     } else {
+        log_debug("cmd type: %d", command->type);
         switch (command->type) {
             case CMD_START:
                 if (is_halting) {
@@ -80,7 +81,8 @@ bool init_handle_client_command(control_command_t *command, int socket)
                 //TODO: async loop / select for checking if service is stopped and blocking client?
                 break;
             case CMD_STATUS:
-                ret = svc->state<<4 & CMD_RESPONSE_STATE;
+                ret = svc->state<<4 | CMD_RESPONSE_STATE;
+                log_debug("resp: %d", ret);
                 break;
             //TODO: CMD_STOP_BLOCK
         }
@@ -159,7 +161,7 @@ static bool init_handle_signal(const struct signalfd_siginfo *info)
                 svc->state = STATE_DOWN;
                 svc->pid = 0;
 
-                log_error("Service %s failed with exitcode %d", svc->name, retval);
+                log_error("Service %s exitted with code %d", svc->name, retval);
                 init_halt_thread();
             }
             break;
