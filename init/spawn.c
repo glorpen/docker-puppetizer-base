@@ -1,0 +1,63 @@
+#include "common.h"
+
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/wait.h>
+
+#include "spawn.h"
+#include "log.h"
+
+pid_t spawn2(const char *script, const char *arg)
+{
+    sigset_t no_signals;
+    pid_t pid;
+
+    const char *argv[] = {
+        script,
+        arg,
+        0
+    };
+    
+    pid = fork();
+    if (pid < 0) {
+        fatal_errno("Forking failed", 6);
+    } else if (pid == 0) {
+        // unblock all signals for child
+        sigemptyset(&no_signals);
+        sigprocmask(SIG_SETMASK, &no_signals, NULL);
+
+        // run app
+        execve(script, (char * const*)argv, NULL);
+        //TODO: lepsze raportowanie do parenta?
+        fatal_errno("Could not run exec for %s", ERROR_EXEC_FAILED, script);
+    }
+
+    return pid;
+}
+pid_t spawn1(const char *script)
+{
+    return spawn2(script, NULL);
+}
+
+int spawn2_wait(const char *script, const char *arg)
+{
+    int stat;
+    pid_t pid = spawn2(script, arg);
+    
+    if (pid < 0) {
+        return -1;
+    }
+    waitpid(pid, &stat, 0);
+    
+    return spawn_retval(stat);
+}
+
+int8_t spawn_retval(int stat)
+{
+    if (WIFEXITED(stat)) {
+        return WEXITSTATUS(stat);
+    } else {
+        // killed by signal
+        return - WTERMSIG(stat);
+    }
+}
