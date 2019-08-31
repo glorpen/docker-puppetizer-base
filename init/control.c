@@ -9,6 +9,7 @@
 #include "log.h"
 
 typedef uint8_t control_header_length_t;
+control_header_length_t control_max_data_length = (uint64_t)(1<<(sizeof(control_header_length_t)*8))-1;
 
 static socket_status_t control_communicate(int fd, ssize_t (*comm)(int, void*, size_t, int), va_list ap)
 {
@@ -119,7 +120,12 @@ control_reponse_t control_read_response(int fd)
 
 socket_status_t control_write_command(int fd, const char* name, control_command_type_t type)
 {
-    control_header_length_t len = strlen(name) + 1;
+    size_t len = strlen(name) + 1;
+
+    if (len > control_max_data_length) {
+        fatal("Service name is too long", ERROR_ARGS);
+    }
+
     return control_send(
         fd,
         &type, sizeof(control_command_type_t),

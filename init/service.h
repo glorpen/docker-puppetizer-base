@@ -1,9 +1,11 @@
 #ifndef _SERVICE_H
 #define _SERVICE_H
 
+typedef uint8_t service_state_t;
+
 struct service {
     char* name;
-    uint8_t state;
+    service_state_t state;
     pid_t pid;
 };
 
@@ -19,5 +21,6 @@ bool service_stop(struct service *svc);
 struct service* service_find_by_name(const char* name);
 struct service* service_find_by_pid(pid_t pid);
 uint8_t service_count_by_state(uint8_t state, bool invert);
+void service_set_down(struct service *svc);
 
 #endif

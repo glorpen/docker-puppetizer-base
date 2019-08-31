@@ -9,20 +9,8 @@
 
 int fd_control;
 
-static void service_command(const char* action, const char* want_action, const char* name, control_command_type_t type)
-{
-    control_reponse_t response;
-    if (strcmp(action, want_action) == 0) {
-        if (control_write_command(fd_control, name, type) != SOCKET_STATUS_OK) {
-            fatal_errno("Failed sending message", 1);
-        }
-        response = control_read_response(fd_control);
-        print_response(response);
-        exit(0);
-    }
-}
 
-void print_response(control_reponse_t response)
+static void print_response(control_reponse_t response)
 {
     switch(response)
     {
@@ -38,6 +26,19 @@ void print_response(control_reponse_t response)
             }
     }
 
+}
+
+static void service_command(const char* action, const char* want_action, const char* name, control_command_type_t type)
+{
+    control_reponse_t response;
+    if (strcmp(action, want_action) == 0) {
+        if (control_write_command(fd_control, name, type) != SOCKET_STATUS_OK) {
+            fatal_errno("Failed sending message", 1);
+        }
+        response = control_read_response(fd_control);
+        print_response(response);
+        exit(0);
+    }
 }
 
 int client_main(int argc, char** argv)

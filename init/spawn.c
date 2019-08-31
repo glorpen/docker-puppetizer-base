@@ -52,12 +52,15 @@ int spawn2_wait(const char *script, const char *arg)
     return spawn_retval(stat);
 }
 
-int8_t spawn_retval(int stat)
+int16_t spawn_retval(int stat)
 {
     if (WIFEXITED(stat)) {
         return WEXITSTATUS(stat);
-    } else {
+    } else if(WIFSIGNALED(stat)) {
         // killed by signal
         return - WTERMSIG(stat);
+    } else {
+        // still running
+        return SPAWN_RETVAL_RUNNING;
     }
 }

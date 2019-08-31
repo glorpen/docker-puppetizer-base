@@ -28,6 +28,7 @@ typedef uint8_t bool;
 #define ERROR_SOCKET_FAILED 10
 #define ERROR_RESPONSE 11
 #define ERROR_BOOT_FAILED 12
+#define ERROR_ARGS 13
 
 #define ERROR_EXEC_FAILED 16
 

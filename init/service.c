@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include <malloc.h>
+#include <sys/wait.h>
 
 #include "service.h"
 #include "spawn.h"
@@ -59,6 +60,12 @@ void service_create_all()
     log_debug("Found %d services", services_count);
 }
 
+void service_set_down(struct service *svc)
+{
+    svc->pid = 0;
+    svc->state = STATE_DOWN;
+}
+
 /**
  * Runs stop script asynchronusly.
  */
@@ -86,6 +93,7 @@ bool service_stop(struct service *svc)
 bool service_start(struct service *svc)
 {
     char cmd[256];
+    int status;
 
     if (svc->state == STATE_DOWN) {
         svc->state = STATE_PENDING_UP;
@@ -93,7 +101,16 @@ bool service_start(struct service *svc)
         pid_t pid = spawn2(cmd, NULL);
         if (pid > 0) {
             svc->pid = pid;
-            return TRUE;
+
+            // FIXME: will mark as failed when child somehow is SIGSTOP
+            if (waitpid(pid, &status, WNOHANG) == 0) {
+                svc->state = STATE_UP;
+                return TRUE;
+            } else {
+                service_set_down(svc);
+                return FALSE;
+            }
+
         } else {
             log_warning("Service %s failed to start", svc->name);
             svc->state = STATE_DOWN;

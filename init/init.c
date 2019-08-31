@@ -138,6 +138,7 @@ static bool init_handle_signal(const struct signalfd_siginfo *info)
 {
     int status;
     struct service* svc;
+    service_state_t svc_state;
     int retval;
 
     switch(info->ssi_signo){
@@ -158,11 +159,16 @@ static bool init_handle_signal(const struct signalfd_siginfo *info)
             if (svc == NULL) {
                 log_info("Reaped zombie PID:%d", info->ssi_pid);
             } else {
-                svc->state = STATE_DOWN;
-                svc->pid = 0;
+                svc_state = svc->state;
+                service_set_down(svc);
 
                 log_error("Service %s exitted with code %d", svc->name, retval);
-                init_halt_thread();
+
+                // halt if service exitted unexpectedly or it failed wither errorcode
+                if (svc_state != STATE_PENDING_DOWN || retval != 0) {
+                    log_debug("Service exitted with code %d when had status %d, halting", retval, svc_state);
+                    init_halt_thread();
+                }
             }
             break;
         case SIGTERM:
