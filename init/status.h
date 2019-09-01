@@ -11,6 +11,8 @@
 #define S_CONTROL_SERVICE_NAME_MAXLEN 3
 #define S_CONTROL_NO_SERVER 4
 
+#define S_SERVICE_COLLECT_ERROR 5
+
 typedef uint8_t status_t;
 const char* status_translation(status_t status);
 

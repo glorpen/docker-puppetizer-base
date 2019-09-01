@@ -35,21 +35,22 @@ static struct service* service_new(const char *name)
     return svc;
 }
 
-void service_create_all()
+status_t service_create_all(uint8_t* count)
 {
-    int count, i;
+    int l_count, i;
     struct dirent **namelist;
 
-    count = scandir(PUPPETIZER_SERVICE_DIR, &namelist, service_files_filter, NULL);
+    l_count = scandir(PUPPETIZER_SERVICE_DIR, &namelist, service_files_filter, NULL);
 
-    if (count == -1) {
-        fatal_errno(ERROR_SERVICE_SCAN, "An error occurrend when searching for services");
+    if (l_count == -1) {
+        log_errno_error("Searching for services failed");
+        return S_SERVICE_COLLECT_ERROR;
     }
 
-    services = malloc(sizeof(struct service*) * count);
-    services_count = count;
+    services = malloc(sizeof(struct service*) * l_count);
+    services_count = l_count;
 
-    for (i=0;i<count; i++) {
+    for (i=0;i<l_count; i++) {
         namelist[i]->d_name[strlen(namelist[i]->d_name)-6] = 0;
         services[i] = service_new(namelist[i]->d_name);
         log_debug("Adding service %s", services[i]->name);
@@ -58,6 +59,12 @@ void service_create_all()
     free(namelist);
 
     log_debug("Found %d services", services_count);
+
+    if (count != NULL) {
+        *count = l_count;
+    }
+
+    return S_OK;
 }
 
 void service_set_down(struct service *svc)

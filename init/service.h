@@ -1,6 +1,8 @@
 #ifndef _SERVICE_H
 #define _SERVICE_H
 
+#include "status.h"
+
 typedef uint8_t service_state_t;
 
 struct service {
@@ -14,7 +16,7 @@ struct service {
 #define STATE_DOWN 3
 #define STATE_PENDING_DOWN 4
 
-void service_create_all();
+status_t service_create_all();
 uint8_t service_stop_all();
 bool service_start(struct service *svc);
 bool service_stop(struct service *svc);

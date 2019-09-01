@@ -97,6 +97,15 @@ static void init_setup_signals()
     sigprocmask(SIG_BLOCK, &all_signals, NULL);
 }
 
+/**
+ * Marks init as halting and runs shutdown process.
+ * 
+ * Halt process will run apply command with halt argument
+ * then it tries to stop any service which is still running.
+ * 
+ * Will not wait for services to exit not send signal to
+ * other processes.
+ */
 void init_halt()
 {
     uint8_t i;
@@ -112,7 +121,7 @@ void init_halt()
         log_error("Puppet halt failed with exitcode %d", ret);
     }
 
-    // stop any services that are not stoping
+    // stop any services that are not stopping
     i = service_stop_all();
     if (i>0) {
         log_warning("Stopping %d outstanding services.", i);
@@ -121,10 +130,17 @@ void init_halt()
 
 static void init_halt_thread()
 {
-    int ret = pthread_create(&halt_thread, NULL, (void * (*)(void *))init_halt, NULL);
+    int ret;
 
-    if (ret != 0) {
-        fatal(ERROR_THREAD_FAILED, "Halt thread creation failed with %d", ret);
+    if (halt_thread == 0) {
+        log_info("Shutting down");
+        ret = pthread_create(&halt_thread, NULL, (void * (*)(void *))init_halt, NULL);
+
+        if (ret != 0) {
+            fatal(ERROR_THREAD_FAILED, "Halt thread creation failed with %d", ret);
+        }
+    } else {
+        log_warning("Tried to run halt thread multiple times.");
     }
 }
 
@@ -146,13 +162,14 @@ static bool init_handle_signal(const struct signalfd_siginfo *info)
                     log_info("Booting completed");
                 } else {
                     log_error("Boot script failed");
-                    return FALSE;
+                    // failed boot script when halting is ok
+                    return is_halting;
                 }
             }
 
             svc = service_find_by_pid(info->ssi_pid);
             if (svc == NULL) {
-                log_info("Reaped zombie PID:%d", info->ssi_pid);
+                log_debug("Reaped PID:%d", info->ssi_pid);
             } else {
                 svc_state = svc->state;
                 service_set_down(svc);
@@ -177,9 +194,9 @@ static bool init_handle_signal(const struct signalfd_siginfo *info)
             break;
         case SIGHUP:
             if (is_halting) {
-                log_warning("Ignoring puppet aply request");
+                log_warning("Ignoring apply request");
             } else {
-                log_debug("Running puppet apply");
+                log_debug("Running apply");
                 init_apply();
             }
             break;
@@ -199,7 +216,7 @@ static int init_create_signal_fd()
     sigaddset(&sigmask, SIGCHLD);
     sigaddset(&sigmask, SIGHUP);
 
-    // make fd for reading required signals
+    // create fd for reading required signals
     fd_signal = signalfd(-1, &sigmask, 0);
     if (fd_signal == -1) {
         fatal_errno(ERROR_FD_FAILED, "Failed to create signal descriptor");
@@ -277,8 +294,7 @@ static int init_loop()
                 //setnonblocking(fd_client);
                 ev.data.fd = fd_client;
                 if (epoll_ctl(fd_epoll, EPOLL_CTL_ADD, fd_client, &ev) == -1) {
-                    // TODO: strerr, errno
-                    log_error("Failed to setup control client socket polling");
+                    log_errno_error("Failed to setup control client socket polling");
                     exit_code = ERROR_SOCKET_FAILED;
                     break;
                 }
@@ -337,23 +353,23 @@ int init_boot()
         fatal(ERROR_BOOT_FAILED, "Could not start boot script");
     }
 
-    // loop socket, check apply status, exit if failed
     return init_loop();
-    // and signalfd for signals
-    // for (;;) {
-    //     int signum;
-    //     sigwait(&all_signals, &signum);
-    //     handle_signal(signum);
-    // }
 }
 
 int main(int argc, char** argv)
 {
+    status_t status;
+
     log_level = LOG_DEBUG;
+
     if (argc == 1) {
         log_info("Running init");
         init_setup_signals();
-        service_create_all();
+        status = service_create_all(NULL);
+        if (status != S_OK) {
+            fatal_status(ERROR_BOOT_FAILED, status, "Failed to initialise services");
+        }
+
         init_detach_from_terminal();
         return init_boot();
     } else {

@@ -26,7 +26,7 @@ void vlog(log_level_t level, const char *msg, va_list ap)
     }
     uint16_t len = strlen(msg);
     char tmp[len+2+10];
-    sprintf(tmp, "[% 5s] %s\n", log_level_name(level), msg);
+    sprintf(tmp, "[%-5s] %s\n", log_level_name(level), msg);
     vfprintf(stderr, tmp, ap);
 }
 

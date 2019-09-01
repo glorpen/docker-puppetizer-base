@@ -26,6 +26,11 @@ void log_errno(log_level_t level, const char *msg, ...);
 #define log_status_warning(...) log_status(LOG_WARNING, __VA_ARGS__)
 #define log_status_debug(...) log_status(LOG_DEBUG, __VA_ARGS__)
 
+#define log_errno_error(...) log_errno(LOG_ERROR, __VA_ARGS__)
+#define log_errno_info(...) log_errno(LOG_INFO, __VA_ARGS__)
+#define log_errno_warning(...) log_errno(LOG_WARNING, __VA_ARGS__)
+#define log_errno_debug(...) log_errno(LOG_DEBUG, __VA_ARGS__)
+
 #define fatal(RC, ...) log_error(__VA_ARGS__); exit(RC)
 #define fatal_errno(RC, ...) log_errno(LOG_ERROR, __VA_ARGS__); exit(RC)
 #define fatal_status(RC, ...) log_status_error(__VA_ARGS__); exit(RC)
