@@ -17,6 +17,7 @@
 #define FALSE 0
 typedef uint8_t bool;
 
+// TODO: s/error/fatal/g
 #define ERROR_EPOLL_FAILED 1
 #define ERROR_EPOLL_WAIT 3
 #define ERROR_EPOLL_SIGNAL_MESSAGE 4

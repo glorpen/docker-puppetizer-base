@@ -14,7 +14,6 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#include "init.h"
 #include "control.h"
 #include "client.h"
 #include "service.h"
@@ -219,7 +218,7 @@ static int init_loop()
     int changes = 0;
     uint8_t buffer[sizeof(struct signalfd_siginfo)+128];
     int exit_code = 0;
-    socket_status_t sock_status;
+    status_t status;
 
     int fd_signal, fd_epoll, fd_control, fd_client;
     uint16_t i;
@@ -231,7 +230,10 @@ static int init_loop()
     fd_signal = init_create_signal_fd();
 
     // make fd for control socket
-    fd_control = control_listen(5);
+    status = control_listen(&fd_control, 5);
+    if (status != S_OK) {
+        fatal("Failed to create listening socket", ERROR_SOCKET_FAILED);
+    }
     
     // setup epoll
     fd_epoll = epoll_create1(0);
@@ -287,12 +289,12 @@ static int init_loop()
             }
             else {
                 // client connections
-                sock_status = control_read_command((control_command_t*)buffer, events[i].data.fd);
-                if (sock_status == SOCKET_STATUS_EOF) {
+                status = control_read_command(events[i].data.fd, (control_command_t*)buffer);
+                if (status == S_SOCKET_EOF) {
                     // socket is closed
                     errored = TRUE;
                 } else {
-                    if (sock_status == SOCKET_STATUS_OK) {
+                    if (status == S_OK) {
                         if (!init_handle_client_command((control_command_t*)buffer, events[i].data.fd)) {
                             log_warning("Failed to handle client message");
                             errored = TRUE;

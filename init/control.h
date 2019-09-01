@@ -1,13 +1,7 @@
 #ifndef _CONTROL_H
 #define _CONTROL_H
 
-#include <stdint.h>
-
-#define SOCKET_STATUS_OK 0
-#define SOCKET_STATUS_ERROR 1
-#define SOCKET_STATUS_EOF 2
-
-typedef uint8_t socket_status_t;
+#include "status.h"
 
 #define CMD_START 1
 #define CMD_STOP 2
@@ -28,10 +22,10 @@ typedef struct control_command_t {
 
 typedef uint8_t control_reponse_t;
 
-socket_status_t control_read_command(control_command_t *msg, int fd);
-int control_connect();
-int control_listen(uint8_t backlog);
-control_reponse_t control_read_response(int socket);
-socket_status_t control_write_command(int fd, const char* name, control_command_type_t type);
+status_t control_read_command(int fd, control_command_t *msg);
+status_t control_connect(int* fd);
+status_t control_listen(int *fd, uint8_t backlog);
+status_t control_read_response(int fd, control_reponse_t* response);
+status_t control_write_command(const char* name, control_command_type_t type, int fd);
 
 #endif

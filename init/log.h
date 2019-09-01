@@ -2,6 +2,7 @@
 #define _LOG_H
 
 #include <stdarg.h>
+#include "status.h"
 
 void fatal(const char *msg, int rc, ...);
 void fatal_errno(const char *msg, int rc, ...);

@@ -11,12 +11,16 @@
 typedef uint8_t control_header_length_t;
 control_header_length_t control_max_data_length = (uint64_t)(1<<(sizeof(control_header_length_t)*8))-1;
 
-static socket_status_t control_communicate(int fd, ssize_t (*comm)(int, void*, size_t, int), va_list ap)
+/**
+ * On success returns S_OK.
+ * When failed returns one of S_SOCKET_* constants.
+ */
+static status_t control_communicate(int fd, ssize_t (*comm)(int, void*, size_t, int), va_list ap)
 {
-    uint8_t ret = SOCKET_STATUS_OK, handled, len;
-    int res;
-    uint8_t *buff;
+    status_t ret = S_OK;
     control_header_length_t last_value = 0;
+    uint8_t *buff, handled, len;
+    int res;
 
     for(;;) {
         buff = va_arg(ap, uint8_t*);
@@ -28,7 +32,7 @@ static socket_status_t control_communicate(int fd, ssize_t (*comm)(int, void*, s
         // if len is not specified, use last value
         if (len == 0) {
             if (last_value == 0) {
-                ret = SOCKET_STATUS_ERROR;
+                ret = S_SOCKET_ERROR;
                 break;
             }
             len = last_value;
@@ -37,7 +41,7 @@ static socket_status_t control_communicate(int fd, ssize_t (*comm)(int, void*, s
 
         if (buff == NULL) {
             if (len != sizeof(control_header_length_t)) {
-                ret = SOCKET_STATUS_ERROR;
+                ret = S_SOCKET_ERROR;
                 break;
             }
             buff = &last_value;
@@ -49,20 +53,20 @@ static socket_status_t control_communicate(int fd, ssize_t (*comm)(int, void*, s
             res = comm(fd, buff+handled, len-handled, 0);
             switch(res){
                 case -1:
-                    ret = SOCKET_STATUS_ERROR;
+                    ret = S_SOCKET_ERROR;
                     break;
                 case 0:
-                    ret = SOCKET_STATUS_EOF;
+                    ret = S_SOCKET_EOF;
                     break;
                 default:
                     handled += res;
                     break;
             }
 
-            if (ret != SOCKET_STATUS_OK) break;
+            if (ret != S_OK) break;
         }
 
-        if (ret != SOCKET_STATUS_OK) break;
+        if (ret != S_OK) break;
 
         if (len == sizeof(control_header_length_t)) {
             last_value = *((control_header_length_t*)buff);
@@ -72,9 +76,9 @@ static socket_status_t control_communicate(int fd, ssize_t (*comm)(int, void*, s
     return ret;
 }
 
-static socket_status_t control_recv(int fd, ...)
+static status_t control_recv(int fd, ...)
 {
-    socket_status_t ret;
+    status_t ret;
     va_list ap;
     va_start(ap, fd);
     ret = control_communicate(fd, recv, ap);
@@ -82,17 +86,21 @@ static socket_status_t control_recv(int fd, ...)
     return ret;
 }
 
-static socket_status_t control_send(int fd, ...)
+static status_t control_send(int fd, ...)
 {
-    socket_status_t ret;
+    status_t ret;
     va_list ap;
     va_start(ap, fd);
-    ret = control_communicate(fd, send, ap);
+    ret = control_communicate(fd, (ssize_t (*)(int,  void *, size_t,  int))send, ap);
     va_end(ap);
     return ret;
 }
 
-socket_status_t control_read_command(control_command_t *msg, int fd)
+/**
+ * On success returns S_OK.
+ * When failed returns one of S_SOCKET_* constants.
+ */
+status_t control_read_command(int fd, control_command_t *msg)
 {
     return control_recv(
         fd,
@@ -103,27 +111,28 @@ socket_status_t control_read_command(control_command_t *msg, int fd)
     );
 }
 
-control_reponse_t control_read_response(int fd)
+/**
+ * On success returns S_OK.
+ * When failed returns one of S_SOCKET_* constants.
+ */
+status_t control_read_response(int fd, control_reponse_t* response)
 {
-    control_reponse_t response;
-    socket_status_t status = control_recv(
+    return control_recv(
         fd,
-        &response, sizeof(control_reponse_t)
+        response, sizeof(control_reponse_t)
     );
-
-    if (status != SOCKET_STATUS_OK) {
-        fatal("Partial response received", ERROR_RESPONSE);
-    }
-
-    return response;
 }
 
-socket_status_t control_write_command(int fd, const char* name, control_command_type_t type)
+/**
+ * On success returns S_OK.
+ * When failed returns one of S_SOCKET_*, S_CONTROL_* constants.
+ */
+status_t control_write_command(const char* name, control_command_type_t type, int fd)
 {
     size_t len = strlen(name) + 1;
 
     if (len > control_max_data_length) {
-        fatal("Service name is too long", ERROR_ARGS);
+        return S_CONTROL_SERVICE_NAME_MAXLEN;
     }
 
     return control_send(
@@ -135,41 +144,45 @@ socket_status_t control_write_command(int fd, const char* name, control_command_
     );
 }
 
-int control_connect()
+status_t control_connect(int* fd)
 {
     struct sockaddr_un saddr;
     socklen_t addr_size = sizeof(struct sockaddr_un);
 
-    int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    *fd = socket(AF_UNIX, SOCK_STREAM, 0);
     memset(&saddr, 0, sizeof(struct sockaddr_un));
     saddr.sun_family = AF_UNIX;
     strcpy(saddr.sun_path, PUPPETIZER_CONTROL_SOCKET);
-    if (connect(fd, (const struct sockaddr *)&saddr, addr_size) == -1) {
-        fatal_errno("Could not connect to server.", 1);
+    if (connect(*fd, (const struct sockaddr *)&saddr, addr_size) == -1) {
+        return S_CONTROL_NO_SERVER;
     }
 
-    return fd;
+    return S_OK;
 }
 
-int control_listen(uint8_t backlog)
+status_t control_listen(int* fd, uint8_t backlog)
 {
     struct sockaddr_un saddr_server;
 
     int fd_control = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd_control == -1) {
-        fatal_errno("Failed to create control socket", ERROR_SOCKET_FAILED);
+        return S_SOCKET_ERROR;
+        // fatal_errno("Failed to create control socket", ERROR_SOCKET_FAILED);
     }
     memset(&saddr_server, 0, sizeof(struct sockaddr_un));
     saddr_server.sun_family = AF_UNIX;
     strcpy(saddr_server.sun_path, PUPPETIZER_CONTROL_SOCKET);
 
     if (bind(fd_control, (struct sockaddr *) &saddr_server, sizeof(struct sockaddr_un)) == -1) {
-        fatal_errno("Failed to bind control socket", ERROR_SOCKET_FAILED);
+        return S_SOCKET_ERROR;
+        // fatal_errno("Failed to bind control socket", ERROR_SOCKET_FAILED);
     }
 
     if (listen(fd_control, backlog) == -1) {
-        fatal_errno("Failed to listen on control socket", ERROR_SOCKET_FAILED);
+        return S_SOCKET_ERROR;
+        // fatal_errno("Failed to listen on control socket", ERROR_SOCKET_FAILED);
     }
 
-    return fd_control;
+    *fd = fd_control;
+    return S_OK;
 }
