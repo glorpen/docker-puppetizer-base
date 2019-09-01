@@ -20,7 +20,7 @@ pid_t spawn2(const char *script, const char *arg)
     
     pid = fork();
     if (pid < 0) {
-        fatal_errno("Forking failed", 6);
+        fatal_errno(6, "Forking failed");
     } else if (pid == 0) {
         // unblock all signals for child
         sigemptyset(&no_signals);
@@ -29,7 +29,7 @@ pid_t spawn2(const char *script, const char *arg)
         // run app
         execve(script, (char * const*)argv, NULL);
         //TODO: lepsze raportowanie do parenta?
-        fatal_errno("Could not run exec for %s", ERROR_EXEC_FAILED, script);
+        fatal_errno(ERROR_EXEC_FAILED, "Could not run exec for %s", script);
     }
 
     return pid;

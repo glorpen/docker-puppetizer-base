@@ -4,11 +4,30 @@
 #include <stdarg.h>
 #include "status.h"
 
-void fatal(const char *msg, int rc, ...);
-void fatal_errno(const char *msg, int rc, ...);
-void log_error(const char *msg, ...);
-void log_info(const char *msg, ...);
-void log_warning(const char *msg, ...);
-void log_debug(const char *msg, ...);
+#define LOG_ERROR 0
+#define LOG_WARNING 1
+#define LOG_INFO 2
+#define LOG_DEBUG 3
+typedef uint8_t log_level_t;
+
+extern log_level_t log_level;
+
+void log_any(log_level_t level, const char *msg, ...);
+void log_status(log_level_t level, status_t status, const char *msg, ...);
+void log_errno(log_level_t level, const char *msg, ...);
+
+#define log_error(...) log_any(LOG_ERROR, __VA_ARGS__)
+#define log_info(...) log_any(LOG_INFO, __VA_ARGS__)
+#define log_warning(...) log_any(LOG_WARNING, __VA_ARGS__)
+#define log_debug(...) log_any(LOG_DEBUG, __VA_ARGS__)
+
+#define log_status_error(...) log_status(LOG_ERROR, __VA_ARGS__)
+#define log_status_info(...) log_status(LOG_INFO, __VA_ARGS__)
+#define log_status_warning(...) log_status(LOG_WARNING, __VA_ARGS__)
+#define log_status_debug(...) log_status(LOG_DEBUG, __VA_ARGS__)
+
+#define fatal(RC, ...) log_error(__VA_ARGS__); exit(RC)
+#define fatal_errno(RC, ...) log_errno(LOG_ERROR, __VA_ARGS__); exit(RC)
+#define fatal_status(RC, ...) log_status_error(__VA_ARGS__); exit(RC)
 
 #endif

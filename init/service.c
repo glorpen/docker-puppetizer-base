@@ -43,7 +43,7 @@ void service_create_all()
     count = scandir(PUPPETIZER_SERVICE_DIR, &namelist, service_files_filter, NULL);
 
     if (count == -1) {
-        fatal_errno("An error occurrend when searching for services: %s", ERROR_SERVICE_SCAN);
+        fatal_errno(ERROR_SERVICE_SCAN, "An error occurrend when searching for services");
     }
 
     services = malloc(sizeof(struct service*) * count);
@@ -75,6 +75,7 @@ bool service_stop(struct service *svc)
     char pid[16];
 
     if (svc->state == STATE_UP) {
+        log_info("Stopping service %s", svc->name);
         svc->state = STATE_PENDING_DOWN;
         cmd[snprintf(cmd, 255, PUPPETIZER_SERVICE_DIR "/%s.stop", svc->name)] = 0;
         sprintf(pid, "%d", svc->pid);
@@ -96,6 +97,7 @@ bool service_start(struct service *svc)
     int status;
 
     if (svc->state == STATE_DOWN) {
+        log_info("Starting service %s", svc->name);
         svc->state = STATE_PENDING_UP;
         cmd[snprintf(cmd, 255, PUPPETIZER_SERVICE_DIR "/%s.start", svc->name)] = 0;
         pid_t pid = spawn2(cmd, NULL);

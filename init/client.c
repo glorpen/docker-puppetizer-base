@@ -34,10 +34,10 @@ static void service_command(const char* action, const char* want_action, const c
 
     if (strcmp(action, want_action) == 0) {
         if ((status = control_write_command(name, type, fd_control)) != S_OK) {
-            fatal("Failed sending message", 1);
+            fatal(1, "Failed sending message");
         }
         if ((status = control_read_response(fd_control, &response)) != S_OK) {
-            fatal("Failed reading response", 1);
+            fatal(1, "Failed reading response");
         }
         print_response(response);
         exit(0);
@@ -55,7 +55,7 @@ int client_main(int argc, char** argv)
     status = control_connect(&fd_control);
 
     if (status != S_OK) {
-        fatal("Failed to connect to server", 1);
+        fatal_status(1, status, "Failed to connect to server");
     }
 
     service_command(argv[1], "start", argv[2], CMD_START);

@@ -27,11 +27,7 @@ static pthread_t halt_thread = 0;
 void init_detach_from_terminal()
 {
     if (ioctl(STDIN_FILENO, TIOCNOTTY) == -1) {
-        log_debug(
-            "Unable to detach from controlling tty (errno=%d %s).",
-            errno,
-            strerror(errno)
-        );
+        log_errno(LOG_DEBUG, "Unable to detach from controlling tty");
     } else {
         /*
         * When the session leader detaches from its controlling tty via
@@ -49,7 +45,7 @@ static pid_t init_apply()
 {
     pid_t apply_pid = spawn1(PUPPETIZER_APPLY);
     if (apply_pid == -1) {
-        fatal("Failed to start puppet apply", ERROR_SPAWN_FAILED);
+        fatal(ERROR_SPAWN_FAILED, "Failed to start puppet apply");
     }
     return apply_pid;
 }
@@ -128,7 +124,7 @@ static void init_halt_thread()
     int ret = pthread_create(&halt_thread, NULL, (void * (*)(void *))init_halt, NULL);
 
     if (ret != 0) {
-        fatal("Halt thread creation failed with %d", ERROR_THREAD_FAILED, ret);
+        fatal(ERROR_THREAD_FAILED, "Halt thread creation failed with %d", ret);
     }
 }
 
@@ -206,7 +202,7 @@ static int init_create_signal_fd()
     // make fd for reading required signals
     fd_signal = signalfd(-1, &sigmask, 0);
     if (fd_signal == -1) {
-        fatal_errno("Failed to create signal descriptor", ERROR_FD_FAILED);
+        fatal_errno(ERROR_FD_FAILED, "Failed to create signal descriptor");
     }
 
     return fd_signal;
@@ -232,30 +228,30 @@ static int init_loop()
     // make fd for control socket
     status = control_listen(&fd_control, 5);
     if (status != S_OK) {
-        fatal("Failed to create listening socket", ERROR_SOCKET_FAILED);
+        fatal_status(ERROR_SOCKET_FAILED, status, "Failed to create listening socket");
     }
     
     // setup epoll
     fd_epoll = epoll_create1(0);
     if (fd_epoll == -1) {
-        fatal_errno("Failed to setup polling", ERROR_EPOLL_FAILED);
+        fatal_errno(ERROR_EPOLL_FAILED, "Failed to setup polling");
     }
 
     ev.events = EPOLLIN;
     
     ev.data.fd = fd_signal;
     if (epoll_ctl(fd_epoll, EPOLL_CTL_ADD, fd_signal, &ev) == -1) {
-        fatal_errno("Failed to setup signal polling", ERROR_EPOLL_FAILED);
+        fatal_errno(ERROR_EPOLL_FAILED, "Failed to setup signal polling");
     }
     ev.data.fd = fd_control;
     if (epoll_ctl(fd_epoll, EPOLL_CTL_ADD, fd_control, &ev) == -1) {
-        fatal_errno("Failed to setup control socket polling", ERROR_EPOLL_FAILED);
+        fatal_errno(ERROR_EPOLL_FAILED, "Failed to setup control socket polling");
     }
     
     for (;;) {
         changes = epoll_wait(fd_epoll, events, 10, 500);
         if (changes == -1) {
-            fatal_errno("Could not wait for events", ERROR_EPOLL_WAIT);
+            fatal_errno(ERROR_EPOLL_WAIT, "Could not wait for events");
         }
 
         log_debug("loop");
@@ -300,7 +296,7 @@ static int init_loop()
                             errored = TRUE;
                         }
                     } else {
-                        log_warning("Failed to read client message");
+                        log_status_warning(status, "Failed to read client message");
                         errored = TRUE;
                     }
                 }
@@ -308,7 +304,7 @@ static int init_loop()
                 if (errored) {
                     ev.data.fd = events[i].data.fd;
                     if (epoll_ctl(fd_epoll, EPOLL_CTL_DEL, events[i].data.fd, &ev) == -1) {
-                        fatal_errno("Failed to remove client socket polling", ERROR_EPOLL_FAILED);
+                        fatal_errno(ERROR_EPOLL_FAILED, "Failed to remove client socket polling");
                     }
                     shutdown(events[i].data.fd, SHUT_RDWR);
                 }
@@ -338,7 +334,7 @@ int init_boot()
 {
     boot_pid = init_apply();
     if (boot_pid == -1) {
-        fatal("Could not start boot script", ERROR_BOOT_FAILED);
+        fatal(ERROR_BOOT_FAILED, "Could not start boot script");
     }
 
     // loop socket, check apply status, exit if failed
@@ -353,6 +349,7 @@ int init_boot()
 
 int main(int argc, char** argv)
 {
+    log_level = LOG_DEBUG;
     if (argc == 1) {
         log_info("Running init");
         init_setup_signals();
