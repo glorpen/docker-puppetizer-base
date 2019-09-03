@@ -25,6 +25,7 @@ static bool is_halting = false;
 static bool is_booting = false;
 static pid_t boot_pid;
 static pthread_t halt_thread = 0;
+static status_t halt_cause = S_OK;
 
 static void init_detach_from_terminal()
 {
@@ -142,24 +143,23 @@ static void init_halt()
     //TODO: foreach services - control_dispatch_service_state_change(svc)
 }
 
-static void init_halt_thread()
+static void init_halt_thread(status_t cause)
 {
     int ret;
 
-    if (halt_thread == 0) {
-        log_info("Shutting down");
+    if (halt_thread == 0 && !is_halting) {
+        halt_cause = cause;
+        log_info("Halting init");
         ret = pthread_create(&halt_thread, NULL, (void * (*)(void *))init_halt, NULL);
 
         if (ret != 0) {
             fatal(ERROR_THREAD_FAILED, "Halt thread creation failed with %d", ret);
         }
-    } else {
-        log_warning("Tried to run halt thread multiple times.");
     }
 }
 
 
-static bool init_handle_signal(const struct signalfd_siginfo *info)
+static void init_handle_signal(const struct signalfd_siginfo *info)
 {
     int status;
     struct service* svc;
@@ -177,8 +177,7 @@ static bool init_handle_signal(const struct signalfd_siginfo *info)
                     log_info("Booting completed");
                 } else {
                     log_error("Boot script failed");
-                    // failed boot script when halting is ok
-                    return is_halting;
+                    init_halt_thread(S_INIT_BOOT_FAILED);
                 }
             }
 
@@ -195,18 +194,14 @@ static bool init_handle_signal(const struct signalfd_siginfo *info)
                 // halt if service exitted unexpectedly or it failed wither errorcode
                 if (svc_state != STATE_PENDING_DOWN || retval != 0) {
                     log_debug("Service exitted with code %d when had status %d, halting", retval, svc_state);
-                    init_halt_thread();
+                    init_halt_thread(S_INIT_SERVICE_ERROR);
                 }
             }
             break;
         case SIGTERM:
         case SIGINT:
-            if (is_halting) {
-                log_warning("Ignoring halting request");
-            } else {
-                log_debug("Halting");
-                init_halt_thread();
-            }
+            log_debug("Received TERM/INT signal");
+            init_halt_thread(S_INIT_HALT_REQUEST);
             break;
         case SIGHUP:
             log_debug("Received HUP signal");
@@ -218,8 +213,6 @@ static bool init_handle_signal(const struct signalfd_siginfo *info)
             }
             break;
     }
-
-    return true;
 }
 
 static int init_create_signal_fd()
@@ -242,7 +235,7 @@ static int init_create_signal_fd()
     return fd_signal;
 }
 
-static int init_loop()
+static status_t init_loop()
 {
     struct epoll_event ev, events[10];
     int changes = 0;
@@ -298,9 +291,7 @@ static int init_loop()
                     log_error("Bad signal size info read");
                     return ERROR_EPOLL_SIGNAL_MESSAGE;
                 }
-                if (!init_handle_signal((struct signalfd_siginfo*)buffer)) {
-                    return ERROR_EPOLL_SIGNAL;
-                }
+                init_handle_signal((struct signalfd_siginfo*)buffer);
             }
             // handle init client
             else if (events[i].data.fd == fd_control) {
@@ -358,7 +349,8 @@ static int init_loop()
         pthread_join(halt_thread, NULL);
     }
    
-   return 0;
+   //TODO: error code when booting script failed or we are exitting beacouse of service error
+   return halt_cause;
 }
 
 static int init_boot()

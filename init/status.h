@@ -13,6 +13,10 @@
 
 #define S_SERVICE_COLLECT_ERROR 5
 
+#define S_INIT_BOOT_FAILED 6
+#define S_INIT_SERVICE_ERROR 7
+#define S_INIT_HALT_REQUEST 8
+
 typedef uint8_t status_t;
 const char* status_translation(status_t status);
 
