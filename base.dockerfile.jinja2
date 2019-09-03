@@ -4,7 +4,7 @@ FROM base as dev
 
 {% embed "dockerfile/dev.jinja2" %}
 
-{% embed "dockerfile/runit.jinja2" %}
+{% embed "dockerfile/init.jinja2" %}
 {% embed "dockerfile/ruby.jinja2" %}
 {% embed "dockerfile/boost.jinja2" %}
 {% embed "dockerfile/yaml-cpp.jinja2" %}
@@ -15,7 +15,7 @@ FROM base as dev
 
 FROM dev as prepare
 
-COPY --from=dev_runit "{{ install_dir }}" "{{ install_dir }}"
+COPY --from=dev_init "{{ install_dir }}" "{{ install_dir }}"
 COPY --from=dev_puppet "{{ install_dir }}" "{{ install_dir }}"
 
 {% block dev_build_post %}
@@ -51,7 +51,7 @@ COPY --from=prepare "{{ install_dir }}" "{{ install_dir }}"
 COPY --from=local "{{ install_dir }}" "{{ install_dir }}"
 
 HEALTHCHECK CMD ["/opt/puppetizer/bin/health"]
-CMD ["/opt/puppetizer/bin/runit-init"]
+CMD ["/opt/puppetizer/bin/init"]
 
 LABEL \
     org.opencontainers.image.created="{{ now.isoformat() }}" \
