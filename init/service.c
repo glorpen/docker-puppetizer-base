@@ -12,6 +12,8 @@
 #include "spawn.h"
 #include "log.h"
 
+#define LOG_MODULE "service"
+
 static uint8_t services_count = 0;
 struct service **services;
 

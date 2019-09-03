@@ -8,6 +8,8 @@
 #include "control.h"
 #include "log.h"
 
+#define LOG_MODULE "control"
+
 typedef uint8_t control_header_length_t;
 control_header_length_t control_max_data_length = (uint64_t)(1<<(sizeof(control_header_length_t)*8))-1;
 
@@ -30,25 +32,35 @@ static status_t control_communicate(int fd, ssize_t (*comm)(int, void*, size_t, 
     uint8_t *buff, handled, len;
     int res;
 
+    // log_debug("communicate with %d", fd);
+
     for(;;) {
         buff = va_arg(ap, uint8_t*);
         len = va_arg(ap, int);
+        
+        // log_debug("communicate: buff==null: %d, len=%d", buff == NULL, len);
+
         if (buff == NULL && len == 0) {
+            // log_debug("eof");
             break;
         }
+
 
         // if len is not specified, use last value
         if (len == 0) {
             if (last_value == 0) {
+                // log_error("No len and no last value");
                 ret = S_SOCKET_ERROR;
                 break;
             }
             len = last_value;
             last_value = 0;
+            // log_debug("Setting len to %d", len);
         }
 
         if (buff == NULL) {
             if (len != sizeof(control_header_length_t)) {
+                // log_error("Len field has wrong size");
                 ret = S_SOCKET_ERROR;
                 break;
             }
@@ -62,6 +74,7 @@ static status_t control_communicate(int fd, ssize_t (*comm)(int, void*, size_t, 
             switch(res){
                 case -1:
                     ret = S_SOCKET_ERROR;
+                    // log_errno_warning("Socket failed");
                     break;
                 case 0:
                     ret = S_SOCKET_EOF;
@@ -110,6 +123,7 @@ static status_t control_send(int fd, ...)
  */
 status_t control_read_command(int fd, control_command_t *msg)
 {
+    log_debug("Reading command from %d", fd);
     return control_recv(
         fd,
         &(msg->type), sizeof(control_command_type_t),
@@ -127,7 +141,8 @@ status_t control_read_response(int fd, control_reponse_t* response)
 {
     return control_recv(
         fd,
-        response, sizeof(control_reponse_t)
+        response, sizeof(control_reponse_t),
+        NULL, NULL
     );
 }
 
@@ -143,6 +158,8 @@ status_t control_write_command(const char* name, control_command_type_t type, in
         return S_CONTROL_SERVICE_NAME_MAXLEN;
     }
 
+    log_debug("Writting command to %d", fd);
+
     return control_send(
         fd,
         &type, sizeof(control_command_type_t),
@@ -154,6 +171,7 @@ status_t control_write_command(const char* name, control_command_type_t type, in
 
 status_t control_write_response(control_reponse_t response, int fd)
 {
+    log_debug("Sending response %d to %d", response, fd);
     return control_send(
         fd,
         &response, sizeof(control_reponse_t),
@@ -204,6 +222,19 @@ status_t control_listen(int* fd, uint8_t backlog)
     return S_OK;
 }
 
+static status_t control_send_service_state_event(struct service* svc, struct init_client_t* client)
+{
+    status_t status;
+    if ((status = control_write_response(CMD_RESPONSE_STATE | svc->state<<4, client->client_fd)) != S_OK) {
+        log_info("Failed sending event to client");
+        control_unsubscribe_client(client->client_fd);
+    } else {
+        log_debug("Dispatched event to client %d", client->client_fd);
+    }
+
+    return status;
+}
+
 bool control_subscribe_client(int fd, struct service *svc)
 {
     log_debug("Subscribed client %d to %s", fd, svc->name);
@@ -212,7 +243,7 @@ bool control_subscribe_client(int fd, struct service *svc)
         if (subscribed_clients[i].svc == NULL) {
             subscribed_clients[i].svc = svc;
             subscribed_clients[i].client_fd = fd;
-            return TRUE;
+            return control_send_service_state_event(svc, &subscribed_clients[i]) == S_OK;
         }
     }
     return FALSE;
@@ -235,12 +266,7 @@ void control_dispatch_service_state_change(struct service *svc)
     uint8_t i;
     for (i=0;i<MAX_SUBSCRIBED_CLIENTS;i++) {
         if (subscribed_clients[i].svc == svc) {
-            if (control_write_response(CMD_RESPONSE_STATE | svc->state<<4, subscribed_clients[i].client_fd) != S_OK) {
-                log_info("Failed sending event to client");
-                control_unsubscribe_client(subscribed_clients[i].client_fd);
-            } else {
-                log_debug("Dispatched event to client %d", subscribed_clients[i].client_fd);
-            }
+            control_send_service_state_event(svc, &subscribed_clients[i]);
         }
     }
 }

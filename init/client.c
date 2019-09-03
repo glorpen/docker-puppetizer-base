@@ -8,6 +8,8 @@
 #include "log.h"
 #include "service.h"
 
+#define LOG_MODULE "client"
+
 int fd_control;
 
 static const char *translate_service_state(service_state_t state)
@@ -38,31 +40,30 @@ static control_reponse_t client_send_message(const char *name, control_command_t
     return response;
 }
 
-static service_state_t client_service_status(const char *name)
-{
-    return client_send_message(name, CMD_STATUS) >> 4;
-}
-
 static bool wait_for_service_state(const char *name, service_state_t target_state)
 {
     control_reponse_t response;
     status_t status;
 
-    if (response = client_send_message(name, CMD_SERVICE_EVENTS) != CMD_RESPONSE_OK) {
+    response = client_send_message(name, CMD_SERVICE_EVENTS);
+
+    if (! (response & CMD_RESPONSE_STATE)) {
         fatal(10, "Failed subscribing to service");
     }
 
     //TODO: timeout
     for (;;) {
-        if (control_read_response(fd_control, &response) != S_OK) {
-            fatal(2, "Failed reading status");
-        }
         response = response >> 4;
 
         log_debug("client: is %d, wants %d", response, target_state);
-        //TODO: check if pending up => up, pending => down or pending up => down (failed)
+        
         if (response == target_state) {
             return TRUE;
+        }
+
+        if ((status = control_read_response(fd_control, &response)) != S_OK) {
+            log_status_error(status, "asd");
+            fatal(2, "Failed reading status");
         }
     }
 
@@ -86,28 +87,16 @@ static void print_response(control_reponse_t response)
                 printf("Unknown response\n");
             }
     }
-}
 
-static void service_command(const char* action, const char* want_action, const char* name, control_command_type_t type)
-{
-    status_t status;
-    control_reponse_t response;
-
-    if (strcmp(action, want_action) == 0) {
-        if ((status = control_write_command(name, type, fd_control)) != S_OK) {
-            fatal(3, "Failed sending message");
-        }
-        if ((status = control_read_response(fd_control, &response)) != S_OK) {
-            fatal(4, "Failed reading response");
-        }
-        print_response(response);
-        exit(0);
-    }
+    exit(0);
 }
 
 int client_main(int argc, char** argv)
 {
     status_t status;
+
+    log_level = LOG_DEBUG;
+    log_name = "client";
 
     if (argc != 3 && argc != 4) {
         exit(1);
@@ -119,13 +108,7 @@ int client_main(int argc, char** argv)
         fatal_status(1, status, "Failed to connect to server");
     }
 
-    // if (strcmp(argv[1], "start") == 0) {
-    //     print_response(client_send_message(argv[2], CMD_START));
-    //     wait_for_service_state(argv[2], STATE_UP);
-    // }
-
     if (strcmp(argv[1], "stop") == 0) {
-        log_debug("####### argc: %d", argc);
         if (argc > 3) {
             if (client_send_message(argv[2], CMD_STOP) == CMD_RESPONSE_OK) {
                 if (wait_for_service_state(argv[2], STATE_DOWN)) {
@@ -135,13 +118,24 @@ int client_main(int argc, char** argv)
                     printf("ERROR\n");
                 }
             }
-            exit(1);
         } else {
-            service_command(argv[1], "stop", argv[2], CMD_STOP);
+            print_response(client_send_message(argv[2], CMD_START));
+        }
+    } else if (strcmp(argv[1], "start") == 0) {
+        if (argc > 3) {
+            if (client_send_message(argv[2], CMD_START) == CMD_RESPONSE_OK) {
+                if (wait_for_service_state(argv[2], STATE_UP)) {
+                    printf("OK\n");
+                    exit(0);
+                } else {
+                    printf("ERROR\n");
+                }
+            }
+        } else {
+            print_response(client_send_message(argv[2], CMD_STOP));
         }
     } else {
-        service_command(argv[1], "start", argv[2], CMD_START);
-        service_command(argv[1], "status", argv[2], CMD_STATUS);
+        print_response(client_send_message(argv[2], CMD_STATUS));
     }
     exit(1);
 }

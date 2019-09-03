@@ -7,6 +7,8 @@
 #include "spawn.h"
 #include "log.h"
 
+#define LOG_MODULE "spawn"
+
 pid_t spawn2(const char *script, const char *arg)
 {
     sigset_t no_signals;

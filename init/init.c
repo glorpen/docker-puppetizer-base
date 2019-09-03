@@ -20,6 +20,8 @@
 #include "log.h"
 #include "spawn.h"
 
+#define LOG_MODULE "init"
+
 static bool is_halting = FALSE;
 static bool is_booting = FALSE;
 static pid_t boot_pid;
@@ -91,8 +93,7 @@ bool init_handle_client_command(control_command_t *command, int socket)
                 log_debug("resp: %d", ret);
                 break;
             case CMD_SERVICE_EVENTS:
-                ret = control_subscribe_client(socket, svc)?CMD_RESPONSE_OK:CMD_RESPONSE_FAILED;
-                break;
+                return control_subscribe_client(socket, svc);
         }
     }
 
@@ -376,6 +377,7 @@ int main(int argc, char** argv)
     status_t status;
 
     log_level = LOG_DEBUG;
+    log_name = "init";
 
     // TODO: arg handling - loglevel, help
 
