@@ -21,6 +21,7 @@
 #include "spawn.h"
 
 static bool is_halting = FALSE;
+static bool is_booting = FALSE;
 static pid_t boot_pid;
 static pthread_t halt_thread = 0;
 
@@ -43,7 +44,16 @@ void init_detach_from_terminal()
 
 static pid_t init_apply()
 {
-    pid_t apply_pid = spawn1(PUPPETIZER_APPLY);
+    pid_t apply_pid;
+
+    if (is_booting) {
+        log_warning("Ignoring booting request");
+        return 0;
+    }
+
+    is_booting = TRUE;
+    apply_pid = spawn1(PUPPETIZER_APPLY);
+
     if (apply_pid == -1) {
         fatal(ERROR_SPAWN_FAILED, "Failed to start puppet apply");
     }
@@ -65,25 +75,30 @@ bool init_handle_client_command(control_command_t *command, int socket)
                     log_warning("Ignoring service start request");
                 } else {
                     ret = service_start(svc)?CMD_RESPONSE_OK:CMD_RESPONSE_FAILED;
+                    if (ret == CMD_RESPONSE_OK) {
+                        control_dispatch_service_state_change(svc);
+                    }
                 }
                 break;
             case CMD_STOP:
-                if (is_halting) {
-                    log_warning("Ignoring service stop request");
-                } else {
-                    ret = service_stop(svc)?CMD_RESPONSE_OK:CMD_RESPONSE_FAILED;
+                ret = service_stop(svc)?CMD_RESPONSE_OK:CMD_RESPONSE_FAILED;
+                if (ret == CMD_RESPONSE_OK) {
+                    control_dispatch_service_state_change(svc);
                 }
-                //TODO: async loop / select for checking if service is stopped and blocking client?
                 break;
             case CMD_STATUS:
                 ret = svc->state<<4 | CMD_RESPONSE_STATE;
                 log_debug("resp: %d", ret);
                 break;
-            //TODO: CMD_STOP_BLOCK
+            case CMD_SERVICE_EVENTS:
+                control_subscribe_client(socket, svc);
+                ret = CMD_RESPONSE_OK;
+
+                break;
         }
     }
 
-    return send(socket, &ret, sizeof(control_reponse_t), 0) == sizeof(control_reponse_t);
+    return control_write_response(&ret, socket) == S_OK;
 }
 
 /**
@@ -126,6 +141,7 @@ void init_halt()
     if (i>0) {
         log_warning("Stopping %d outstanding services.", i);
     }
+    //TODO: foreach services - control_dispatch_service_state_change(svc)
 }
 
 static void init_halt_thread()
@@ -158,6 +174,7 @@ static bool init_handle_signal(const struct signalfd_siginfo *info)
             retval = spawn_retval(status);
 
             if (boot_pid == info->ssi_pid) {
+                is_booting = FALSE;
                 if (retval == 0) {
                     log_info("Booting completed");
                 } else {
@@ -173,6 +190,7 @@ static bool init_handle_signal(const struct signalfd_siginfo *info)
             } else {
                 svc_state = svc->state;
                 service_set_down(svc);
+                control_dispatch_service_state_change(svc);
 
                 log_error("Service %s exitted with code %d", svc->name, retval);
 
@@ -193,6 +211,7 @@ static bool init_handle_signal(const struct signalfd_siginfo *info)
             }
             break;
         case SIGHUP:
+            log_debug("Received HUP signal");
             if (is_halting) {
                 log_warning("Ignoring apply request");
             } else {
@@ -230,7 +249,6 @@ static int init_loop()
     struct epoll_event ev, events[10];
     int changes = 0;
     uint8_t buffer[sizeof(struct signalfd_siginfo)+128];
-    int exit_code = 0;
     status_t status;
 
     int fd_signal, fd_epoll, fd_control, fd_client;
@@ -280,12 +298,10 @@ static int init_loop()
                 // there should be sizeof(struct signalfd_siginfo) bytes available to read
                 if (read(fd_signal, buffer, sizeof(struct signalfd_siginfo)) != sizeof(struct signalfd_siginfo)) {
                     log_error("Bad signal size info read");
-                    exit_code = ERROR_EPOLL_SIGNAL_MESSAGE;
-                    break;
+                    return ERROR_EPOLL_SIGNAL_MESSAGE;
                 }
                 if (!init_handle_signal((struct signalfd_siginfo*)buffer)) {
-                    exit_code = ERROR_EPOLL_SIGNAL;
-                    break;
+                    return ERROR_EPOLL_SIGNAL;
                 }
             }
             // handle init client
@@ -295,8 +311,7 @@ static int init_loop()
                 ev.data.fd = fd_client;
                 if (epoll_ctl(fd_epoll, EPOLL_CTL_ADD, fd_client, &ev) == -1) {
                     log_errno_error("Failed to setup control client socket polling");
-                    exit_code = ERROR_SOCKET_FAILED;
-                    break;
+                    return ERROR_SOCKET_FAILED;
                 }
             }
             else {
@@ -322,6 +337,7 @@ static int init_loop()
                     if (epoll_ctl(fd_epoll, EPOLL_CTL_DEL, events[i].data.fd, &ev) == -1) {
                         fatal_errno(ERROR_EPOLL_FAILED, "Failed to remove client socket polling");
                     }
+                    control_unsubscribe_client(events[i].data.fd);
                     shutdown(events[i].data.fd, SHUT_RDWR);
                 }
             }
@@ -330,8 +346,8 @@ static int init_loop()
         if (is_halting) {
             if (service_count_by_state(STATE_DOWN, TRUE) == 0) {
                 log_info("No more services running, exitting");
+                break;
             }
-            break;
         }
     }
 
@@ -343,7 +359,7 @@ static int init_loop()
         pthread_join(halt_thread, NULL);
     }
    
-   return exit_code;
+   return 0;
 }
 
 int init_boot()
@@ -361,6 +377,8 @@ int main(int argc, char** argv)
     status_t status;
 
     log_level = LOG_DEBUG;
+
+    // TODO: arg handling - loglevel, help
 
     if (argc == 1) {
         log_info("Running init");
