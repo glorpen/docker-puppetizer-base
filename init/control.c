@@ -246,7 +246,7 @@ bool control_subscribe_client(int fd, struct service *svc)
             return control_send_service_state_event(svc, &subscribed_clients[i]) == S_OK;
         }
     }
-    return FALSE;
+    return false;
 }
 
 void control_unsubscribe_client(int fd)

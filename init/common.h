@@ -10,10 +10,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stddef.h>
-
-#define TRUE 1
-#define FALSE 0
-typedef uint8_t bool;
+#include <stdbool.h>
 
 // TODO: s/error/fatal/g
 #define ERROR_EPOLL_FAILED 1

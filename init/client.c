@@ -58,7 +58,7 @@ static bool wait_for_service_state(const char *name, service_state_t target_stat
         log_debug("client: is %d, wants %d", response, target_state);
         
         if (response == target_state) {
-            return TRUE;
+            return true;
         }
 
         if ((status = control_read_response(fd_control, &response)) != S_OK) {
@@ -67,7 +67,7 @@ static bool wait_for_service_state(const char *name, service_state_t target_stat
         }
     }
 
-    return FALSE;
+    return false;
 }
 
 static void print_response(control_reponse_t response)

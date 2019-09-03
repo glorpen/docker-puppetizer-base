@@ -94,10 +94,10 @@ bool service_stop(struct service *svc)
             svc->state = STATE_UP;
         }
 
-        return TRUE;
+        return true;
     }
 
-    return FALSE;
+    return false;
 }
 
 bool service_start(struct service *svc)
@@ -116,10 +116,10 @@ bool service_start(struct service *svc)
             // FIXME: will mark as failed when child somehow is SIGSTOP
             if (waitpid(pid, &status, WNOHANG) == 0) {
                 svc->state = STATE_UP;
-                return TRUE;
+                return true;
             } else {
                 service_set_down(svc);
-                return FALSE;
+                return false;
             }
 
         } else {
@@ -128,7 +128,7 @@ bool service_start(struct service *svc)
         }
     }
 
-    return FALSE;
+    return false;
 }
 
 uint8_t service_stop_all()

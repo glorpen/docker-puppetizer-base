@@ -22,8 +22,8 @@
 
 #define LOG_MODULE "init"
 
-static bool is_halting = FALSE;
-static bool is_booting = FALSE;
+static bool is_halting = false;
+static bool is_booting = false;
 static pid_t boot_pid;
 static pthread_t halt_thread = 0;
 
@@ -53,7 +53,7 @@ static pid_t init_apply()
         return 0;
     }
 
-    is_booting = TRUE;
+    is_booting = true;
     apply_pid = spawn1(PUPPETIZER_APPLY);
 
     if (apply_pid == -1) {
@@ -126,7 +126,7 @@ void init_halt()
 
     if (is_halting) return;
 
-    is_halting = TRUE;
+    is_halting = true;
     
     log_debug("Running halt action");
     // run puppet-apply with halt option to stop services
@@ -173,7 +173,7 @@ static bool init_handle_signal(const struct signalfd_siginfo *info)
             retval = spawn_retval(status);
 
             if (boot_pid == info->ssi_pid) {
-                is_booting = FALSE;
+                is_booting = false;
                 if (retval == 0) {
                     log_info("Booting completed");
                 } else {
@@ -220,7 +220,7 @@ static bool init_handle_signal(const struct signalfd_siginfo *info)
             break;
     }
 
-    return TRUE;
+    return true;
 }
 
 static int init_create_signal_fd()
@@ -291,7 +291,7 @@ static int init_loop()
         log_debug("loop");
 
         for (i = 0; i < changes; i++) {
-            errored = FALSE;
+            errored = false;
 
             if (events[i].data.fd == fd_signal) {
                 // there should be sizeof(struct signalfd_siginfo) bytes available to read
@@ -319,16 +319,16 @@ static int init_loop()
                 if (status == S_SOCKET_EOF) {
                     // socket is closed
                     log_debug("Client %d exitted", events[i].data.fd);
-                    errored = TRUE;
+                    errored = true;
                 } else {
                     if (status == S_OK) {
                         if (!init_handle_client_command((control_command_t*)buffer, events[i].data.fd)) {
                             log_warning("Failed to handle client message from %d", events[i].data.fd);
-                            errored = TRUE;
+                            errored = true;
                         }
                     } else {
                         log_status_warning(status, "Failed to read client message");
-                        errored = TRUE;
+                        errored = true;
                     }
                 }
 
@@ -344,7 +344,7 @@ static int init_loop()
         }
 
         if (is_halting) {
-            if (service_count_by_state(STATE_DOWN, TRUE) == 0) {
+            if (service_count_by_state(STATE_DOWN, true) == 0) {
                 log_info("No more services running, exitting");
                 break;
             }
