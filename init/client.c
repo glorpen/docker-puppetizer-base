@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <argp.h>
 
 #include "client.h"
 #include "control.h"
@@ -91,16 +92,9 @@ static void print_response(control_reponse_t response)
     exit(0);
 }
 
-int client_main(int argc, char** argv)
+int client_main(const char *svc_name, control_command_type_t cmd, bool wait)
 {
     status_t status;
-
-    log_level = LOG_DEBUG;
-    log_name = "client";
-
-    if (argc != 3 && argc != 4) {
-        exit(1);
-    }
 
     status = control_connect(&fd_control);
 
@@ -108,34 +102,35 @@ int client_main(int argc, char** argv)
         fatal_status(1, status, "Failed to connect to server");
     }
 
-    if (strcmp(argv[1], "stop") == 0) {
-        if (argc > 3) {
-            if (client_send_message(argv[2], CMD_STOP) == CMD_RESPONSE_OK) {
-                if (wait_for_service_state(argv[2], STATE_DOWN)) {
-                    printf("OK\n");
-                    exit(0);
-                } else {
-                    printf("ERROR\n");
+    switch (cmd) {
+        case CMD_STOP:
+            if (wait) {
+                if (client_send_message(svc_name, CMD_STOP) == CMD_RESPONSE_OK) {
+                    if (wait_for_service_state(svc_name, STATE_DOWN)) {
+                        printf("OK\n");
+                        exit(0);
+                    } else {
+                        printf("ERROR\n");
+                    }
                 }
-            }
-        } else {
-            print_response(client_send_message(argv[2], CMD_STOP));
-        }
-    } else if (strcmp(argv[1], "start") == 0) {
-        if (argc > 3) {
-            if (client_send_message(argv[2], CMD_START) == CMD_RESPONSE_OK) {
-                if (wait_for_service_state(argv[2], STATE_UP)) {
-                    printf("OK\n");
-                    exit(0);
-                } else {
-                    printf("ERROR\n");
+            } else {
+                print_response(client_send_message(svc_name, CMD_STOP));
+            };
+        case CMD_START:
+            if (wait) {
+                if (client_send_message(svc_name, CMD_START) == CMD_RESPONSE_OK) {
+                    if (wait_for_service_state(svc_name, STATE_UP)) {
+                        printf("OK\n");
+                        exit(0);
+                    } else {
+                        printf("ERROR\n");
+                    }
                 }
+            } else {
+                print_response(client_send_message(svc_name, CMD_START));
             }
-        } else {
-            print_response(client_send_message(argv[2], CMD_START));
-        }
-    } else {
-        print_response(client_send_message(argv[2], CMD_STATUS));
+        case CMD_STATUS:
+            print_response(client_send_message(svc_name, CMD_STATUS));
     }
-    exit(1);
+    exit(5);
 }

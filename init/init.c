@@ -15,7 +15,6 @@
 #include <sys/un.h>
 
 #include "control.h"
-#include "client.h"
 #include "service.h"
 #include "log.h"
 #include "spawn.h"
@@ -27,7 +26,7 @@ static bool is_booting = false;
 static pid_t boot_pid;
 static pthread_t halt_thread = 0;
 
-void init_detach_from_terminal()
+static void init_detach_from_terminal()
 {
     if (ioctl(STDIN_FILENO, TIOCNOTTY) == -1) {
         log_errno_debug("Unable to detach from controlling tty");
@@ -62,7 +61,7 @@ static pid_t init_apply()
     return apply_pid;
 }
 
-bool init_handle_client_command(control_command_t *command, int socket)
+static bool init_handle_client_command(control_command_t *command, int socket)
 {
     control_reponse_t ret = CMD_RESPONSE_ERROR;
     struct service *svc = service_find_by_name(command->name);
@@ -120,7 +119,7 @@ static void init_setup_signals()
  * Will not wait for services to exit not send signal to
  * other processes.
  */
-void init_halt()
+static void init_halt()
 {
     uint8_t i;
 
@@ -362,7 +361,7 @@ static int init_loop()
    return 0;
 }
 
-int init_boot()
+static int init_boot()
 {
     boot_pid = init_apply();
     if (boot_pid == -1) {
@@ -372,28 +371,19 @@ int init_boot()
     return init_loop();
 }
 
-int main(int argc, char** argv)
+int init_main()
 {
     status_t status;
 
-    log_level = LOG_DEBUG;
-    log_name = "init";
-
-    // TODO: arg handling - loglevel, help
-
-    if (argc == 1) {
-        log_info("Running init");
-        init_setup_signals();
-        status = service_create_all(NULL);
-        if (status != S_OK) {
-            fatal_status(ERROR_BOOT_FAILED, status, "Failed to initialise services");
-        }
-
-        init_detach_from_terminal();
-        return init_boot();
-    } else {
-        return client_main(argc, argv);
+    log_info("Running init");
+    init_setup_signals();
+    status = service_create_all(NULL);
+    if (status != S_OK) {
+        fatal_status(ERROR_BOOT_FAILED, status, "Failed to initialise services");
     }
+
+    init_detach_from_terminal();
+    return init_boot();
 }
 
 /*
