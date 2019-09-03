@@ -251,13 +251,18 @@ bool control_subscribe_client(int fd, struct service *svc)
 
 void control_unsubscribe_client(int fd)
 {
-    log_debug("Unsubscribed client %d", fd);
     uint8_t i;
+    bool found = false;
+
     for (i=0;i<MAX_SUBSCRIBED_CLIENTS;i++) {
         if (subscribed_clients[i].client_fd == fd) {
             subscribed_clients[i].svc = NULL;
             subscribed_clients[i].client_fd = 0;
+            found = true;
         }
+    }
+    if (found) {
+        log_debug("Unsubscribed client %d", fd);
     }
 }
 
