@@ -28,7 +28,7 @@ static pthread_t halt_thread = 0;
 void init_detach_from_terminal()
 {
     if (ioctl(STDIN_FILENO, TIOCNOTTY) == -1) {
-        log_errno(LOG_DEBUG, "Unable to detach from controlling tty");
+        log_errno_debug("Unable to detach from controlling tty");
     } else {
         /*
         * When the session leader detaches from its controlling tty via
@@ -91,14 +91,12 @@ bool init_handle_client_command(control_command_t *command, int socket)
                 log_debug("resp: %d", ret);
                 break;
             case CMD_SERVICE_EVENTS:
-                control_subscribe_client(socket, svc);
-                ret = CMD_RESPONSE_OK;
-
+                ret = control_subscribe_client(socket, svc)?CMD_RESPONSE_OK:CMD_RESPONSE_FAILED;
                 break;
         }
     }
 
-    return control_write_response(&ret, socket) == S_OK;
+    return control_write_response(ret, socket) == S_OK;
 }
 
 /**
@@ -319,11 +317,12 @@ static int init_loop()
                 status = control_read_command(events[i].data.fd, (control_command_t*)buffer);
                 if (status == S_SOCKET_EOF) {
                     // socket is closed
+                    log_debug("Client %d exitted", events[i].data.fd);
                     errored = TRUE;
                 } else {
                     if (status == S_OK) {
                         if (!init_handle_client_command((control_command_t*)buffer, events[i].data.fd)) {
-                            log_warning("Failed to handle client message");
+                            log_warning("Failed to handle client message from %d", events[i].data.fd);
                             errored = TRUE;
                         }
                     } else {

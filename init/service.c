@@ -43,7 +43,7 @@ status_t service_create_all(uint8_t* count)
     l_count = scandir(PUPPETIZER_SERVICE_DIR, &namelist, service_files_filter, NULL);
 
     if (l_count == -1) {
-        log_errno_error("Searching for services failed");
+        log_errno_error("Searching for services in %s failed", PUPPETIZER_SERVICE_DIR);
         return S_SERVICE_COLLECT_ERROR;
     }
 

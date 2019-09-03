@@ -11,6 +11,14 @@
 typedef uint8_t control_header_length_t;
 control_header_length_t control_max_data_length = (uint64_t)(1<<(sizeof(control_header_length_t)*8))-1;
 
+struct init_client_t {
+    int client_fd;
+    struct service *svc;
+};
+
+#define MAX_SUBSCRIBED_CLIENTS 10
+static struct init_client_t subscribed_clients[MAX_SUBSCRIBED_CLIENTS];
+
 /**
  * On success returns S_OK.
  * When failed returns one of S_SOCKET_* constants.
@@ -144,6 +152,15 @@ status_t control_write_command(const char* name, control_command_type_t type, in
     );
 }
 
+status_t control_write_response(control_reponse_t response, int fd)
+{
+    return control_send(
+        fd,
+        &response, sizeof(control_reponse_t),
+        NULL, NULL
+    );
+}
+
 status_t control_connect(int* fd)
 {
     struct sockaddr_un saddr;
@@ -185,4 +202,45 @@ status_t control_listen(int* fd, uint8_t backlog)
 
     *fd = fd_control;
     return S_OK;
+}
+
+bool control_subscribe_client(int fd, struct service *svc)
+{
+    log_debug("Subscribed client %d to %s", fd, svc->name);
+    uint8_t i;
+    for (i=0;i<MAX_SUBSCRIBED_CLIENTS;i++) {
+        if (subscribed_clients[i].svc == NULL) {
+            subscribed_clients[i].svc = svc;
+            subscribed_clients[i].client_fd = fd;
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+void control_unsubscribe_client(int fd)
+{
+    log_debug("Unsubscribed client %d", fd);
+    uint8_t i;
+    for (i=0;i<MAX_SUBSCRIBED_CLIENTS;i++) {
+        if (subscribed_clients[i].client_fd == fd) {
+            subscribed_clients[i].svc = NULL;
+            subscribed_clients[i].client_fd = 0;
+        }
+    }
+}
+
+void control_dispatch_service_state_change(struct service *svc)
+{
+    uint8_t i;
+    for (i=0;i<MAX_SUBSCRIBED_CLIENTS;i++) {
+        if (subscribed_clients[i].svc == svc) {
+            if (control_write_response(CMD_RESPONSE_STATE | svc->state<<4, subscribed_clients[i].client_fd) != S_OK) {
+                log_info("Failed sending event to client");
+                control_unsubscribe_client(subscribed_clients[i].client_fd);
+            } else {
+                log_debug("Dispatched event to client %d", subscribed_clients[i].client_fd);
+            }
+        }
+    }
 }

@@ -1,6 +1,7 @@
 #ifndef _SERVICE_H
 #define _SERVICE_H
 
+#include <sys/types.h>
 #include "status.h"
 
 typedef uint8_t service_state_t;

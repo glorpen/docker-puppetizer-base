@@ -3,11 +3,9 @@
 
 #define _POSIX_C_SOURCE 200809L
 
-// #define PUPPETIZER_SERVICE_DIR "/opt/puppetizer/services"
-#define PUPPETIZER_SERVICE_DIR "/mnt/sandbox/workspace/glorpen-docker/doc_puppetizer_base/.local/init/services"
-// #define PUPPETIZER_APPLY "/opt/puppetizer/bin/apply"
-#define PUPPETIZER_APPLY "/mnt/sandbox/workspace/glorpen-docker/doc_puppetizer_base/.local/init/apply"
-#define PUPPETIZER_CONTROL_SOCKET "/mnt/sandbox/workspace/glorpen-docker/doc_puppetizer_base/.local/init/control.socket"
+#define PUPPETIZER_SERVICE_DIR "/opt/puppetizer/etc/services"
+#define PUPPETIZER_APPLY "/opt/puppetizer/bin/apply"
+#define PUPPETIZER_CONTROL_SOCKET "/opt/puppetizer/run/control.socket"
 
 #include <stdint.h>
 #include <stdlib.h>
