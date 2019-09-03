@@ -119,7 +119,7 @@ int client_main(int argc, char** argv)
                 }
             }
         } else {
-            print_response(client_send_message(argv[2], CMD_START));
+            print_response(client_send_message(argv[2], CMD_STOP));
         }
     } else if (strcmp(argv[1], "start") == 0) {
         if (argc > 3) {
@@ -132,7 +132,7 @@ int client_main(int argc, char** argv)
                 }
             }
         } else {
-            print_response(client_send_message(argv[2], CMD_STOP));
+            print_response(client_send_message(argv[2], CMD_START));
         }
     } else {
         print_response(client_send_message(argv[2], CMD_STATUS));
