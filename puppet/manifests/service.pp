@@ -1,33 +1,40 @@
 define puppetizer::service (
-  Optional[String] $run_content = undef,
-  Optional[String] $run_source = undef,
-
-  Boolean $autostart = false
+  Optional[String] $start_content = undef,
+  Optional[String] $start_source = undef,
+  Optional[String] $stop_content = undef,
+  Optional[String] $stop_source = undef,
 ){
-  $_dir = "/opt/puppetizer/etc/service/${name}"
+  $_dir = "/opt/puppetizer/etc/services"
+  $_start_script = "${_dir}/${name}.start"
+  $_stop_script = "${_dir}/${name}.stop"
 
-  file { $_dir:
-    ensure => directory
-  }
+  # file { $_dir:
+  #   ensure => directory
+  # }
 
   $file_opts = {
     mode    => 'a=rx,u+w',
     backup  => false,
-    notify  => Service[$title]
   }
 
-  file { "${_dir}/run":
-    content => $run_content,
-    source  => $run_source,
+  file { $_start_script:
+    content => $start_content,
+    source  => $start_source,
+    notify  => Service[$title],
+    *       => $file_opts
+  }
+  file { $_stop_script:
+    content => $stop_content,
+    source  => $stop_source,
+    before  => Service[$title],
     *       => $file_opts
   }
 
   $svc_opts = {
     provider   => 'puppetizer',
-    enable     => $autostart,
-    ensure     => $facts['puppetizer']['running'],
+    ensure     => $facts['puppetizer']['running'] and ! $facts['puppetizer']['halting'],
     hasstatus  => true,
-    hasrestart => true
+    hasrestart => false
   }
 
   if defined(Service[$title]) {
