@@ -29,7 +29,7 @@ pid_t spawn2(const char *script, const char *arg)
         sigprocmask(SIG_SETMASK, &no_signals, NULL);
 
         // run app
-        execve(script, (char * const*)argv, NULL);
+        execv(script, (char * const*)argv);
         //TODO: lepsze raportowanie do parenta?
         fatal_errno(ERROR_EXEC_FAILED, "Could not run exec for %s", script);
     }
