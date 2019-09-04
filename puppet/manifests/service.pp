@@ -8,10 +8,6 @@ define puppetizer::service (
   $_start_script = "${_dir}/${name}.start"
   $_stop_script = "${_dir}/${name}.stop"
 
-  # file { $_dir:
-  #   ensure => directory
-  # }
-
   $file_opts = {
     mode    => 'a=rx,u+w',
     backup  => false,

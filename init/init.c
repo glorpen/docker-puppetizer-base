@@ -129,11 +129,12 @@ static void init_halt()
     is_halting = true;
     
     log_debug("Running halt action");
+    // TODO: requires `client status` command support to detect booting/running/halting on puppet side
     // run puppet-apply with halt option to stop services
-    int ret = spawn2_wait(PUPPETIZER_APPLY, "halt");
-    if (ret != 0) {
-        log_error("Puppet halt failed with exitcode %d", ret);
-    }
+    // int ret = spawn2_wait(PUPPETIZER_APPLY, "halt");
+    // if (ret != 0) {
+    //     log_error("Puppet halt failed with exitcode %d", ret);
+    // }
 
     // stop any services that are not stopping
     i = service_stop_all();
@@ -256,6 +257,8 @@ static status_t init_loop()
     if (status != S_OK) {
         fatal_status(ERROR_SOCKET_FAILED, status, "Failed to create listening socket");
     }
+
+    // TODO: fatal_* should be replaced with S_INIT_* as it is return code to init
     
     // setup epoll
     fd_epoll = epoll_create1(0);
@@ -349,7 +352,6 @@ static status_t init_loop()
         pthread_join(halt_thread, NULL);
     }
    
-   //TODO: error code when booting script failed or we are exitting beacouse of service error
    return halt_cause;
 }
 

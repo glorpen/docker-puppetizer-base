@@ -9,12 +9,11 @@ Puppet::Type.type(:service).provide :puppetizer, :parent => :base do
     This provider manages daemons running supervised by Puppetizer Init.
     When detecting the service directory it will check
 
-    * `/opt/puppetizer/etc/service`
+    * `/opt/puppetizer/etc/services`
 
     This provider supports:
 
     * start/stop
-    # * restart
     * status
 
   EOT
