@@ -1,8 +1,10 @@
 SOURCES := $(wildcard *.c)
 OBJECTS := $(SOURCES:%.c=%.o)
-CC      := gcc -std=c99 -Os -g2
+CC      := @CC@ -std=c99 @CFLAGS@
 CFLAGS  := -Wall -pedantic -I.
-LDFLAGS := -Wall -lpthread
+LDFLAGS := -Wall @LIBS@
+
+all: init init.static
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -10,8 +12,11 @@ LDFLAGS := -Wall -lpthread
 init: $(OBJECTS)
 	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
 
-clean:
-	rm -f $(OBJECTS) init
-
 init.static: $(OBJECTS)
 	$(CC) $(OBJECTS) $(LDFLAGS) -static -o $@
+
+clean:
+	rm -f $(OBJECTS) init init.static
+
+distclean: clean
+	rm -f Makefile
