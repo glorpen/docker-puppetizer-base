@@ -5,6 +5,7 @@ FROM base as dev
 {% embed "dockerfile/dev.jinja2" %}
 
 {% embed "dockerfile/init.jinja2" %}
+
 {% embed "dockerfile/ruby.jinja2" %}
 {% embed "dockerfile/boost.jinja2" %}
 {% embed "dockerfile/yaml-cpp.jinja2" %}
