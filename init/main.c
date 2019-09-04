@@ -11,7 +11,7 @@
 const char *argp_program_version = "init 1.0.0";
 const char *argp_program_bug_address = "<arkadiusz.dziegiel@glorpen.pl>";
 static char doc[] = "Puppetizer init system.";
-static char args_doc[] = "[<SERVICE> <start|stop|status>]...";
+static char args_doc[] = "status|[<start|stop|status> <SERVICE>]";
 static struct argp_option options[] = { 
     { "init", '0', 0, 0, "Run in system init mode, default if pid 1."},
     { "wait", 'w', 0, 0, "Wait for service start/stop when in client mode."},
@@ -40,9 +40,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
             break;
         case ARGP_KEY_ARG: 
             switch (state->arg_num) {
-                case 1:
-                    arguments->svc_name = arg;
-                    break;
                 case 0:
                     if (strcmp(arg, "start") == 0) {
                         arguments->svc_action = CMD_START;
@@ -53,6 +50,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
                     } else {
                         return ARGP_ERR_UNKNOWN;
                     }
+                    break;
+                case 1:
+                    arguments->svc_name = arg;
                     break;
                 default:
                     return ARGP_ERR_UNKNOWN;
