@@ -15,7 +15,8 @@ static char args_doc[] = "status|[<start|stop|status> <SERVICE>]";
 static struct argp_option options[] = { 
     { "init", '0', 0, 0, "Run in system init mode, default if pid 1."},
     { "wait", 'w', 0, 0, "Wait for service start/stop when in client mode."},
-    { "verbose", 'v', 0, 0, "Increase verbosity level (error, warning, info, debug)"},
+    { "verbose", 'v', 0, 0, "Increase verbosity level (error, warning, info, debug)."},
+    { "safe-halt", 'h', 0, 0, "When in init mode run puppet on halt to stop services."},
     { 0 } 
 };
 
@@ -25,6 +26,7 @@ struct arguments {
     uint8_t svc_action;
     bool wait;
     log_level_t log_level;
+    bool safe_halt;
 };
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state) {
@@ -73,21 +75,23 @@ int main(int argc, char** argv)
 
     arguments.mode = getpid() == 1?SERVER_MODE:CLIENT_MODE;
     arguments.svc_action = CMD_SERVICE_STATUS;
+    arguments.svc_name = NULL;
     arguments.wait = false;
     arguments.log_level = LOG_ERROR;
+    arguments.safe_halt = false;
 
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
     log_level = arguments.log_level;
 
-    if (arguments.svc_action == CMD_SERVICE_STATUS) {
-        
+    if (arguments.svc_action == CMD_SERVICE_STATUS && arguments.svc_name == NULL) {
+        arguments.svc_action = CMD_INIT_STATUS;
     }
 
     switch(arguments.mode) {
         case SERVER_MODE:
             log_name = "init";
-            return init_main();
+            return init_main(arguments.safe_halt);
         case CLIENT_MODE:
             log_name = "client";
             return client_main(arguments.svc_name, arguments.svc_action, arguments.wait);

@@ -22,6 +22,11 @@ puppetizer_initialized_token="${puppetizer_root_dir}/initialized" #
 puppet_apply()
 {
 	env="${1:-production}"
+	if [ "x${env}" == "x" ];
+	then
+		env="production"
+	fi
+	
 	if [ "x$PUPPETIZER_DEBUG" = "xy" ] || [ "x${env}" = "xbuild" ];
 	then
 		debug_opts="--verbose --strict=warning"

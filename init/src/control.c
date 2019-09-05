@@ -220,7 +220,7 @@ status_t control_listen(int* fd, uint8_t backlog)
 
 bool control_subscribe_client(int fd, struct service *svc)
 {
-    log_debug("Subscribed client %d to %s", fd, svc->name);
+    log_debug("Subscribing client %d to %s", fd, svc->name);
     uint8_t i;
     for (i=0;i<MAX_SUBSCRIBED_CLIENTS;i++) {
         if (subscribed_clients[i].svc == NULL) {

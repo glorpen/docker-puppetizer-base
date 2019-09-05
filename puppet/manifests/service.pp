@@ -3,6 +3,7 @@ define puppetizer::service (
   Optional[String] $start_source = undef,
   Optional[String] $stop_content = undef,
   Optional[String] $stop_source = undef,
+  Boolean $enabled = true
 ){
   $_dir = "/opt/puppetizer/etc/services"
   $_start_script = "${_dir}/${name}.start"
@@ -28,7 +29,7 @@ define puppetizer::service (
 
   $svc_opts = {
     provider   => 'puppetizer',
-    ensure     => $facts['puppetizer']['running'] and ! $facts['puppetizer']['halting'],
+    ensure     => $enabled and ( $facts['puppetizer']['running'] and ! $facts['puppetizer']['halting'] ),
     hasstatus  => true,
     hasrestart => false
   }

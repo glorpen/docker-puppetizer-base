@@ -11,6 +11,7 @@
 #include "service.h"
 #include "spawn.h"
 #include "log.h"
+#include "control.h"
 
 #define LOG_MODULE "service"
 
@@ -73,6 +74,7 @@ void service_set_down(struct service *svc)
 {
     svc->pid = 0;
     svc->state = STATE_DOWN;
+    control_dispatch_service_state_change(svc);
 }
 
 /**
@@ -86,6 +88,8 @@ bool service_stop(struct service *svc)
     if (svc->state == STATE_UP) {
         log_info("Stopping service %s", svc->name);
         svc->state = STATE_PENDING_DOWN;
+        control_dispatch_service_state_change(svc);
+
         cmd[snprintf(cmd, 255, PUPPETIZER_SERVICE_DIR "/%s.stop", svc->name)] = 0;
         sprintf(pid, "%d", svc->pid);
         // .stop powinno zrobić co się da by zatrzymać serwis "wkrótce"
@@ -93,6 +97,8 @@ bool service_stop(struct service *svc)
             log_warning("Failed to run stop script for service %s", svc->name);
             svc->state = STATE_UP;
         }
+
+        control_dispatch_service_state_change(svc);
 
         return true;
     }
@@ -108,6 +114,8 @@ bool service_start(struct service *svc)
     if (svc->state == STATE_DOWN) {
         log_info("Starting service %s", svc->name);
         svc->state = STATE_PENDING_UP;
+        control_dispatch_service_state_change(svc);
+
         cmd[snprintf(cmd, 255, PUPPETIZER_SERVICE_DIR "/%s.start", svc->name)] = 0;
         pid_t pid = spawn2(cmd, NULL);
         if (pid > 0) {
@@ -116,15 +124,16 @@ bool service_start(struct service *svc)
             // FIXME: will mark as failed when child somehow is SIGSTOP
             if (waitpid(pid, &status, WNOHANG) == 0) {
                 svc->state = STATE_UP;
+                control_dispatch_service_state_change(svc);
                 return true;
             } else {
                 service_set_down(svc);
                 return false;
             }
-
         } else {
             log_warning("Service %s failed to start", svc->name);
             svc->state = STATE_DOWN;
+            control_dispatch_service_state_change(svc);
         }
     }
 

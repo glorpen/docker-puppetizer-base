@@ -27,6 +27,7 @@ static bool is_booting = false;
 static pid_t boot_pid;
 static pthread_t halt_thread = 0;
 static status_t halt_cause = S_OK;
+static bool use_puppet_when_halting = false;
 
 static void init_detach_from_terminal()
 {
@@ -122,6 +123,7 @@ static status_t init_handle_client_command(void *packet, int fd)
             svc = service_find_by_name(svc_name);
 
             if (svc == NULL) {
+                log_warning("Client %d tried to subscribe to nonexisting service %s", fd, svc_name);
                 response = CMD_RESPONSE_ERROR;
             } else {
                 ret = control_subscribe_client(fd, svc);
@@ -169,18 +171,21 @@ static void init_setup_signals()
 static void init_halt()
 {
     uint8_t i;
+    int ret;
 
     if (is_halting) return;
 
     is_halting = true;
     
     log_debug("Running halt action");
-    // TODO: requires `client status` command support to detect booting/running/halting on puppet side
-    // run puppet-apply with halt option to stop services
-    // int ret = spawn2_wait(PUPPETIZER_APPLY, "halt");
-    // if (ret != 0) {
-    //     log_error("Puppet halt failed with exitcode %d", ret);
-    // }
+
+    if (use_puppet_when_halting) {
+        // run puppet-apply with halt option to stop services
+        ret = spawn2_wait(PUPPETIZER_APPLY, "halt");
+        if (ret != 0) {
+            log_error("Puppet halt failed with exitcode %d", ret);
+        }
+    }
 
     // stop any services that are not stopping
     i = service_stop_all();
@@ -234,7 +239,6 @@ static void init_handle_signal(const struct signalfd_siginfo *info)
             } else {
                 svc_state = svc->state;
                 service_set_down(svc);
-                control_dispatch_service_state_change(svc);
 
                 log_error("Service %s exitted with code %d", svc->name, retval);
 
@@ -413,9 +417,11 @@ static int init_boot()
     return init_loop();
 }
 
-int init_main()
+int init_main(bool puppet_halt)
 {
     status_t status;
+
+    use_puppet_when_halting = puppet_halt;
 
     log_info("Running init");
     init_setup_signals();
