@@ -1,8 +1,12 @@
-SOURCES := $(wildcard *.c)
+SOURCES := $(wildcard src/*.c)
 OBJECTS := $(SOURCES:%.c=%.o)
 CC      := @CC@ -std=c99 @CFLAGS@
-CFLAGS  := -Wall -pedantic -I.
+CFLAGS  := -Wall -pedantic -Isrc/
 LDFLAGS := -Wall @LIBS@
+
+TEST_SOURCES := $(wildcard tests/*.c)
+TEST_OBJECTS := $(filter-out src/main.o, $(OBJECTS)) $(TEST_SOURCES:%.c=%.o)
+TEST_LDFLAGS := -Wall @LIBS@ @TEST_LIBS@
 
 all: init init.static
 
@@ -16,7 +20,13 @@ init.static: $(OBJECTS)
 	$(CC) $(OBJECTS) $(LDFLAGS) -static -o $@
 
 clean:
-	rm -f $(OBJECTS) init init.static
+	rm -f $(OBJECTS) $(TEST_OBJECTS) test init init.static
 
 distclean: clean
 	rm -f Makefile
+
+test: $(TEST_OBJECTS)
+	$(CC) $(TEST_OBJECTS) $(TEST_LDFLAGS) -o $@
+
+check: test
+	./test

@@ -17,6 +17,8 @@
 #define S_INIT_SERVICE_ERROR 7
 #define S_INIT_HALT_REQUEST 8
 
+#define S_UNKNOWN_ERROR 9
+
 typedef uint8_t status_t;
 const char* status_translation(status_t status);
 

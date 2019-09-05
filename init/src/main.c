@@ -22,7 +22,7 @@ static struct argp_option options[] = {
 struct arguments {
     enum { SERVER_MODE, CLIENT_MODE } mode;
     char *svc_name;
-    service_state_t svc_action;
+    uint8_t svc_action;
     bool wait;
     log_level_t log_level;
 };
@@ -42,11 +42,11 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
             switch (state->arg_num) {
                 case 0:
                     if (strcmp(arg, "start") == 0) {
-                        arguments->svc_action = CMD_START;
+                        arguments->svc_action = CMD_SERVICE_START;
                     } else if (strcmp(arg, "stop") == 0) {
-                        arguments->svc_action = CMD_STOP;
+                        arguments->svc_action = CMD_SERVICE_STOP;
                     } else if (strcmp(arg, "status") == 0) {
-                        arguments->svc_action = CMD_STATUS;
+                        arguments->svc_action = CMD_SERVICE_STATUS;
                     } else {
                         return ARGP_ERR_UNKNOWN;
                     }
@@ -72,13 +72,17 @@ int main(int argc, char** argv)
     struct arguments arguments;
 
     arguments.mode = getpid() == 1?SERVER_MODE:CLIENT_MODE;
-    arguments.svc_action = CMD_STATUS;
+    arguments.svc_action = CMD_SERVICE_STATUS;
     arguments.wait = false;
     arguments.log_level = LOG_ERROR;
 
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
     log_level = arguments.log_level;
+
+    if (arguments.svc_action == CMD_SERVICE_STATUS) {
+        
+    }
 
     switch(arguments.mode) {
         case SERVER_MODE:

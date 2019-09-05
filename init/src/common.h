@@ -3,9 +3,7 @@
 
 #define _POSIX_C_SOURCE 200809L
 
-#define PUPPETIZER_SERVICE_DIR "/opt/puppetizer/etc/services"
-#define PUPPETIZER_APPLY "/opt/puppetizer/bin/apply"
-#define PUPPETIZER_CONTROL_SOCKET "/opt/puppetizer/run/control.socket"
+#include "../config.h"
 
 #include <stdint.h>
 #include <stdlib.h>

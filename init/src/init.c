@@ -14,6 +14,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
+#include "init.h"
 #include "control.h"
 #include "service.h"
 #include "log.h"
@@ -62,42 +63,87 @@ static pid_t init_apply()
     return apply_pid;
 }
 
-static bool init_handle_client_command(control_command_t *command, int socket)
+static uint8_t init_get_state()
 {
-    control_reponse_t ret = CMD_RESPONSE_ERROR;
-    struct service *svc = service_find_by_name(command->name);
-
-    if (svc == NULL) {
-        log_warning("Service %s was not found", command->name);
-    } else {
-        log_debug("cmd type: %d", command->type);
-        switch (command->type) {
-            case CMD_START:
-                if (is_halting) {
-                    log_warning("Ignoring service start request");
-                } else {
-                    ret = service_start(svc)?CMD_RESPONSE_OK:CMD_RESPONSE_FAILED;
-                    if (ret == CMD_RESPONSE_OK) {
-                        control_dispatch_service_state_change(svc);
-                    }
-                }
-                break;
-            case CMD_STOP:
-                ret = service_stop(svc)?CMD_RESPONSE_OK:CMD_RESPONSE_FAILED;
-                if (ret == CMD_RESPONSE_OK) {
-                    control_dispatch_service_state_change(svc);
-                }
-                break;
-            case CMD_STATUS:
-                ret = svc->state<<4 | CMD_RESPONSE_STATE;
-                log_debug("resp: %d", ret);
-                break;
-            case CMD_SERVICE_EVENTS:
-                return control_subscribe_client(socket, svc);
-        }
+    if (is_booting) {
+        return INIT_STATE_BOOTING;
     }
+    if (is_halting) {
+        return INIT_STATE_HALTING;
+    }
+    return INIT_STATE_RUNNING;
+}
 
-    return control_write_response(ret, socket) == S_OK;
+static status_t init_handle_client_command(void *packet, int fd)
+{
+    struct service *svc;
+    char *svc_name;
+    service_state_t svc_state;
+    control_response_t response;
+    bool ret;
+
+    switch (PACKET_TYPE(packet)) {
+        
+        case PACKET_REQUEST_SERVICE_STATE:
+            log_debug("Handling request for service state for %d", fd);
+            control_decode_request_service_state(packet, &svc_name);
+            svc = service_find_by_name(svc_name);
+            if (svc == NULL) {
+                return control_write_service_state(CMD_RESPONSE_FAILED, 0, fd);
+            } else {
+                return control_write_service_state(CMD_RESPONSE_OK, svc->state, fd);
+            }
+        
+        case PACKET_SET_SERVICE_STATE:
+            control_decode_set_service_state(packet, &svc_name, &svc_state);
+            svc = service_find_by_name(svc_name);
+            log_debug("Handling setting service state for %d and service %s", fd, svc_name);
+
+            if (svc == NULL) {
+                response = CMD_RESPONSE_ERROR;
+            } else {
+                switch (svc_state) {
+                    case STATE_UP:
+                        response = service_start(svc)?CMD_RESPONSE_OK:CMD_RESPONSE_FAILED;
+                        break;
+                    case STATE_DOWN:
+                        response = service_stop(svc)?CMD_RESPONSE_OK:CMD_RESPONSE_FAILED;
+                        break;
+                    default:
+                        log_error("Bad service state %d from client %d", svc_state, fd);
+                        response = CMD_RESPONSE_ERROR;
+                }
+            }
+            return control_write_response(response, fd);
+        
+        case PACKET_SUBSCRIBE_SERVICE_STATE:
+            log_debug("Handling service event subscribing for %d", fd);
+            control_decode_subscribe_service_state(packet, &svc_name);
+            svc = service_find_by_name(svc_name);
+
+            if (svc == NULL) {
+                response = CMD_RESPONSE_ERROR;
+            } else {
+                ret = control_subscribe_client(fd, svc);
+                if (!ret) {
+                    response = CMD_RESPONSE_ERROR;
+                } else {
+                    response = CMD_RESPONSE_OK;
+                }
+            }
+
+            if (response != CMD_RESPONSE_OK) {
+                return control_write_service_state(response, 0, fd);
+            } else {
+                return S_OK;
+            }
+        case PACKET_REQUEST_INIT_STATE:
+            log_debug("Handling request for init state for %d", fd);
+            return control_write_init_state(init_get_state(), fd);
+        default:
+            log_error("Unknown packet %d", PACKET_TYPE(packet));
+            return S_UNKNOWN_ERROR;
+    }
 }
 
 /**
@@ -242,6 +288,7 @@ static status_t init_loop()
     int changes = 0;
     uint8_t buffer[sizeof(struct signalfd_siginfo)+128];
     status_t status;
+    uint8_t packet[control_max_data_length];
 
     int fd_signal, fd_epoll, fd_control, fd_client;
     uint16_t i;
@@ -308,14 +355,15 @@ static status_t init_loop()
             }
             else {
                 // client connections
-                status = control_read_command(events[i].data.fd, (control_command_t*)buffer);
+                status = control_read_packet(events[i].data.fd, packet);
+                // status = control_read_command(events[i].data.fd, (control_command_t*)buffer);
                 if (status == S_SOCKET_EOF) {
                     // socket is closed
                     log_debug("Client %d exitted", events[i].data.fd);
                     errored = true;
                 } else {
                     if (status == S_OK) {
-                        if (!init_handle_client_command((control_command_t*)buffer, events[i].data.fd)) {
+                        if (init_handle_client_command(packet, events[i].data.fd) != S_OK) {
                             log_warning("Failed to handle client message from %d", events[i].data.fd);
                             errored = true;
                         }
