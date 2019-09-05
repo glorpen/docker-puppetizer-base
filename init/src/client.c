@@ -45,10 +45,12 @@ static bool client_set_service_state_and_wait(const char *name, service_state_t 
 
         if (response == CMD_RESPONSE_OK) {
             if (state == target_state) {
-                return true;
+                printf("OK\n");
+                exit(0);
             }
         } else {
-            return false;
+            printf("failed with response %d\n", response);
+            exit(1);
         }
     }
 }
@@ -132,22 +134,14 @@ int client_main(const char *svc_name, uint8_t cmd, bool wait)
     switch (cmd) {
         case CMD_SERVICE_STOP:
             if (wait) {
-                if (client_set_service_state_and_wait(svc_name, STATE_DOWN)) {
-                    printf("OK\n");
-                } else {
-                    printf("ERROR\n");
-                }
+                client_set_service_state_and_wait(svc_name, STATE_DOWN);
             } else {
                 print_response(client_send_message(svc_name, STATE_DOWN));
             };
             break;
         case CMD_SERVICE_START:
             if (wait) {
-                if (client_set_service_state_and_wait(svc_name, STATE_UP)) {
-                    printf("OK\n");
-                } else {
-                    printf("ERROR\n");
-                }
+                client_set_service_state_and_wait(svc_name, STATE_UP);
             } else {
                 print_response(client_send_message(svc_name, STATE_UP));
             }
