@@ -14,7 +14,7 @@ cleanup()
 	
 	os_packages_cleanup
 	
-	rm -rf "${puppet_code_dir}"
+	rm -rf "${puppet_env_dir}/*/*"
 	
 	# clear puppet cache
 	rm -rf ${puppetizer_root_dir}/puppet/cache ${puppetizer_root_dir}/log 
