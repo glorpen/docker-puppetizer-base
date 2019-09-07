@@ -9,6 +9,6 @@
 echo "Configuring environment..."
 
 # apply puppet manifests and check for exit code
-puppet_apply
+puppet_apply "${1}"
 
 echo "Initialization done"
