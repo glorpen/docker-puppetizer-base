@@ -192,10 +192,9 @@ static void init_halt()
     if (i>0) {
         log_warning("Stopping %d outstanding services.", i);
     }
-    //TODO: foreach services - control_dispatch_service_state_change(svc)
 }
 
-static void init_halt_thread(status_t cause)
+MOCKABLE_STATIC(void, init_halt_thread)(status_t cause)
 {
     int ret;
 
@@ -217,37 +216,46 @@ static void init_handle_signal(const struct signalfd_siginfo *info)
     struct service* svc;
     service_state_t svc_state;
     int retval;
+    pid_t pid;
+
+    // multiple signals do not stack, wait for all processes
+    for (;;) {
+        pid = waitpid(-1, &status, WNOHANG);
+        if (pid <= 0) {
+            break;
+        }
+
+        retval = spawn_retval(status);
+
+        if (boot_pid == pid) {
+            is_booting = false;
+            if (retval == 0) {
+                log_info("Booting completed");
+            } else {
+                log_error("Boot script failed");
+                init_halt_thread(S_INIT_BOOT_FAILED);
+            }
+        }
+
+        svc = service_find_by_pid(pid);
+        if (svc == NULL) {
+            log_debug("Reaped PID:%d", pid);
+        } else {
+            svc_state = svc->state;
+            service_set_down(svc);
+
+            log_error("Service %s exitted with code %d", svc->name, retval);
+
+            // halt if service exitted unexpectedly or it failed wither errorcode
+            if (svc_state != STATE_PENDING_DOWN || retval != 0) {
+                log_debug("Service exitted with code %d when had status %d, halting", retval, svc_state);
+                init_halt_thread(S_INIT_SERVICE_ERROR);
+            }
+        }
+    }
 
     switch(info->ssi_signo){
         case SIGCHLD:
-            waitpid(info->ssi_pid, &status, WNOHANG);
-            retval = spawn_retval(status);
-
-            if (boot_pid == info->ssi_pid) {
-                is_booting = false;
-                if (retval == 0) {
-                    log_info("Booting completed");
-                } else {
-                    log_error("Boot script failed");
-                    init_halt_thread(S_INIT_BOOT_FAILED);
-                }
-            }
-
-            svc = service_find_by_pid(info->ssi_pid);
-            if (svc == NULL) {
-                log_debug("Reaped PID:%d", info->ssi_pid);
-            } else {
-                svc_state = svc->state;
-                service_set_down(svc);
-
-                log_error("Service %s exitted with code %d", svc->name, retval);
-
-                // halt if service exitted unexpectedly or it failed wither errorcode
-                if (svc_state != STATE_PENDING_DOWN || retval != 0) {
-                    log_debug("Service exitted with code %d when had status %d, halting", retval, svc_state);
-                    init_halt_thread(S_INIT_SERVICE_ERROR);
-                }
-            }
             break;
         case SIGTERM:
         case SIGINT:
@@ -350,7 +358,6 @@ static status_t init_loop()
             // handle init client
             else if (events[i].data.fd == fd_control) {
                 fd_client = accept(fd_control, (struct sockaddr *) &saddr_client, &peer_addr_size);
-                //setnonblocking(fd_client);
                 ev.data.fd = fd_client;
                 if (epoll_ctl(fd_epoll, EPOLL_CTL_ADD, fd_client, &ev) == -1) {
                     log_errno_error("Failed to setup control client socket polling");
@@ -360,7 +367,6 @@ static status_t init_loop()
             else {
                 // client connections
                 status = control_read_packet(events[i].data.fd, packet);
-                // status = control_read_command(events[i].data.fd, (control_command_t*)buffer);
                 if (status == S_SOCKET_EOF) {
                     // socket is closed
                     log_debug("Client %d exitted", events[i].data.fd);

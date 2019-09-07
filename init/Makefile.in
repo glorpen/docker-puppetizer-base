@@ -1,26 +1,38 @@
+BUILD_DIR := build
+BUILD_TEST_DIR := build-test
+
 SOURCES := $(wildcard src/*.c)
-OBJECTS := $(SOURCES:%.c=%.o)
+OBJECTS := $(addprefix $(BUILD_DIR)/, $(SOURCES:%.c=%.o))
 CC      := @CC@ -std=c99 @CFLAGS@
 CFLAGS  := -Wall -pedantic -Isrc/
 LDFLAGS := -Wall @LIBS@
 
 TEST_SOURCES := $(wildcard tests/*.c)
-TEST_OBJECTS := $(filter-out src/main.o, $(OBJECTS)) $(TEST_SOURCES:%.c=%.o)
+TEST_OBJECTS := $(addprefix $(BUILD_TEST_DIR)/, $(filter-out src/main.o, $(SOURCES:%.c=%.o)) $(TEST_SOURCES:%.c=%.o))
 TEST_LDFLAGS := -Wall @LIBS@ @TEST_LIBS@
+TEST_CFLAGS  := -DTEST
 
 all: init init.static
 
-%.o: %.c
+$(BUILD_DIR):
+	mkdir -p $@/src
+$(BUILD_TEST_DIR):
+	mkdir -p $@/src $@/tests
+
+build/%.o: %.c $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-init: $(OBJECTS)
+build-test/%.o: %.c $(BUILD_TEST_DIR)
+	$(CC) $(CFLAGS) $(TEST_CFLAGS) -c $< -o $@
+
+init: build $(OBJECTS)
 	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
 
 init.static: $(OBJECTS)
 	$(CC) $(OBJECTS) $(LDFLAGS) -static -o $@
 
 clean:
-	rm -f $(OBJECTS) $(TEST_OBJECTS) test init init.static
+	rm -rf $(BUILD_DIR) $(BUILD_TEST_DIR) test init init.static
 
 distclean: clean
 	rm -f Makefile

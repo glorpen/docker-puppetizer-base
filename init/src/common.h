@@ -26,4 +26,12 @@
 
 #define ERROR_EXEC_FAILED 16
 
+#ifdef TEST
+#define MOCKABLE_STATIC(X, Y) static X Y ## __real
+#define __static
+#else
+#define MOCKABLE_STATIC(X, Y) static X Y
+#define __static static
+#endif
+
 #endif

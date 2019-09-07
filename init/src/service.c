@@ -16,7 +16,7 @@
 #define LOG_MODULE "service"
 
 static uint8_t services_count = 0;
-struct service **services;
+static struct service **services;
 
 static int service_files_filter(const struct dirent * f)
 {
