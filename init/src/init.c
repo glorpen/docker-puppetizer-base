@@ -24,7 +24,8 @@
 
 static bool is_halting = false;
 static bool is_booting = false;
-static pid_t boot_pid;
+static bool is_applying = false;
+static pid_t boot_pid, apply_pid;
 static pthread_t halt_thread = 0;
 static status_t halt_cause = S_OK;
 static bool use_puppet_when_halting = false;
@@ -48,14 +49,12 @@ static void init_detach_from_terminal()
 
 static pid_t init_apply()
 {
-    pid_t apply_pid;
-
-    if (is_booting) {
-        log_warning("Ignoring booting request");
+    if (is_applying) {
+        log_warning("Ignoring apply request");
         return 0;
     }
 
-    is_booting = true;
+    is_applying = true;
     apply_pid = spawn1(PUPPETIZER_APPLY);
 
     if (apply_pid == -1) {
@@ -229,13 +228,20 @@ static void init_handle_signal(const struct signalfd_siginfo *info)
 
         retval = spawn_retval(status);
 
-        if (boot_pid == pid) {
-            is_booting = false;
+        if (apply_pid == pid) {
+            is_applying = false;
+            apply_pid = 0;
+
+            if (is_booting && boot_pid == pid) {
+                is_booting = false;
+                boot_pid = 0;
+            }
+
             if (retval == 0) {
-                log_info("Booting completed");
+                log_info("Applying changes completed");
             } else {
-                log_error("Boot script failed");
-                init_halt_thread(S_INIT_BOOT_FAILED);
+                log_error("Applying changes failed");
+                init_halt_thread(S_INIT_APPLY_FAILED);
             }
         }
 
@@ -262,7 +268,8 @@ static void init_handle_signal(const struct signalfd_siginfo *info)
         case SIGTERM:
         case SIGINT:
             log_debug("Received TERM/INT signal");
-            init_halt_thread(S_INIT_HALT_REQUEST);
+            // exit gracefully if halting with signal
+            init_halt_thread(S_OK);
             break;
         case SIGHUP:
             log_debug("Received HUP signal");
