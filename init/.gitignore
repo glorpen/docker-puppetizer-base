@@ -1,0 +1,8 @@
+/build/
+/build-test/
+/config.h
+/*.log
+/*.cache
+/config.status
+/configure
+/Makefile
