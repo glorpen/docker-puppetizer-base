@@ -152,7 +152,7 @@ static status_t init_handle_client_command(void *packet, int fd)
  * Blocks all signals.
  * SIGCHLD, SIGTERM and SIGHUP will be handled by init_loop.
  */
-static void init_setup_signals()
+__static void init_setup_signals()
 {
     sigset_t all_signals;
     sigfillset(&all_signals);
@@ -194,7 +194,7 @@ static void init_halt()
     }
 }
 
-MOCKABLE_STATIC(void, init_halt_thread)(status_t cause)
+__static void MOCKABLE(init_halt_thread)(status_t cause)
 {
     int ret;
 
@@ -217,6 +217,8 @@ static void init_handle_signal(const struct signalfd_siginfo *info)
     service_state_t svc_state;
     int retval;
     pid_t pid;
+
+    log_debug("Handling signal");
 
     // multiple signals do not stack, wait for all processes
     for (;;) {
@@ -294,7 +296,7 @@ static int init_create_signal_fd()
     return fd_signal;
 }
 
-static status_t init_loop()
+__static status_t init_loop()
 {
     struct epoll_event ev, events[10];
     int changes = 0;

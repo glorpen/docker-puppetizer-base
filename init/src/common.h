@@ -27,10 +27,11 @@
 #define ERROR_EXEC_FAILED 16
 
 #ifdef TEST
-#define MOCKABLE_STATIC(X, Y) static X Y ## __real
+#include "../tests/mock.h"
+#define MOCKABLE(X) X##__real
 #define __static
 #else
-#define MOCKABLE_STATIC(X, Y) static X Y
+#define MOCKABLE(X) X
 #define __static static
 #endif
 

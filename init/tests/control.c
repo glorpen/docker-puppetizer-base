@@ -21,7 +21,7 @@ void* generic_read(void *data)
   return NULL;
 }
 
-START_TEST (test_name)
+START_TEST (test_communication)
 {
   control_response_t response_in = CMD_RESPONSE_FAILED, response_out;
   int fd[2];
@@ -49,7 +49,7 @@ TCase * tcontrol_create_test_case(void)
 
     tc = tcase_create("Control");
 
-    tcase_add_test(tc, test_name);
+    tcase_add_test(tc, test_communication);
 
     return tc;
 }

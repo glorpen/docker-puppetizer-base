@@ -1,5 +1,8 @@
 #include <check.h>
+
 #include "control.h"
+#include "init.h"
+
 #include "../src/log.h"
 
 
@@ -10,6 +13,7 @@ Suite * init_suite(void)
     s = suite_create("init");
 
     suite_add_tcase(s, tcontrol_create_test_case());
+    suite_add_tcase(s, tinit_create_test_case());
 
     return s;
 }
@@ -22,7 +26,7 @@ int main()
     SRunner *sr;
 
     log_name = "test";
-    log_level = LOG_ERROR;
+    log_level = LOG_NONE;
 
     s = init_suite();
     sr = srunner_create(s);

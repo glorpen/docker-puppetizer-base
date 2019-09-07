@@ -191,7 +191,7 @@ status_t control_connect(int* fd)
     return S_OK;
 }
 
-status_t control_listen(int* fd, uint8_t backlog)
+status_t MOCKABLE(control_listen)(int* fd, uint8_t backlog)
 {
     struct sockaddr_un saddr_server;
 
