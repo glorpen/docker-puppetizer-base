@@ -9,6 +9,9 @@ RUN wget -O /root/puppet.tar.gz "https://github.com/puppetlabs/puppet/archive/{{
     && tar -xpf /root/puppet.tar.gz -C /usr/src/puppet --strip-components=1 \
     && rm /root/puppet.tar.gz
 
+# remove unused service providers
+RUN find /usr/src/puppet/lib/puppet/provider/service/ -type f ! -name service.rb ! -name base.rb -delete
+
 {{ paths.fix_puppetlabs_paths('/usr/src/puppet') }}
 
 {% endblock %}
