@@ -15,7 +15,7 @@ RUN mkdir -p {% filter oneline %}
 
 RUN cd /usr/src/init \
     && autoconf && ./configure \
-    && make -j "$(nproc)" \
+    && make -j "$(nproc)" init \
     && install -vs -t "{{ install_dir }}/bin" "init" \
     && make clean
 {% endblock%}
