@@ -2,11 +2,11 @@ FROM dev as dev_init
 
 {# deps: none #}
 
-{% block dev_prepare_runit %}
+{% block dev_prepare_init %}
 ADD ./init/ /usr/src/init/
 {% endblock %}
 
-{% block dev_build_runit %}
+{% block dev_build_init %}
 RUN mkdir -p {% filter oneline %}
     /opt/puppetizer/bin
     /opt/puppetizer/etc/services

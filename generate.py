@@ -32,7 +32,7 @@ install_dir = "/opt/puppetizer"
 
 class Config(object):
     
-    _pkg_keys = ('puppet', 'facter', 'ruby', 'leatherman', 'cpp-hocon', 'boost', 'yaml-cpp', 'runit')
+    _pkg_keys = ('puppet', 'facter', 'ruby', 'leatherman', 'cpp-hocon', 'boost', 'yaml-cpp')
     # hiera5 is included in puppet
 
     _targets = None
