@@ -17,7 +17,6 @@ puppetizer_modules_dir="${puppetizer_var_dir}/modules-internal"
 puppetizer_puppetfile="${puppet_conf_dir}/puppetfile"
 
 puppetizer_health_dir="${puppetizer_root_dir}/health" #
-puppetizer_initialized_token="${puppetizer_root_dir}/initialized" #
 
 puppet_apply()
 {

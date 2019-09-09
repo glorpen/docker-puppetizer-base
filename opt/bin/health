@@ -6,12 +6,6 @@
 
 . /opt/puppetizer/share/common.sh
 
-if [ ! -f "${puppetizer_initialized_token}" ];
-then
-	echo "Not yet initialized"
-	exit 1
-fi
-
 # only 0 and 1 exit values are allowed
 find_scripts "${puppetizer_health_dir}" | while read n
 do
