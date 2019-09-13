@@ -27,3 +27,12 @@ status_t control_listen(int* fd, uint8_t backlog)
         return control_listen__real(fd, backlog);
     }
 }
+
+bool mock_spawn2_use = false;
+
+pid_t spawn2(const char *script, const char *arg)
+{
+    if (!mock_spawn2_use) {
+        return spawn2__real(script, arg);
+    }
+}

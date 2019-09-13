@@ -6,8 +6,6 @@
 
 . /opt/puppetizer/share/common.sh
 
-build_env_path="${puppet_env_dir}/build"
-
 cleanup()
 {
 	echo "... cleaning up"
@@ -59,8 +57,6 @@ setup_puppetizer_modules()
 puppet_build()
 {
 	setup_puppetizer_modules
-	
-	mkdir -p "${build_env_path}"
 	
 	os_packages_init
 	

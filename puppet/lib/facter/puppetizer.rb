@@ -3,6 +3,7 @@ require 'puppet'
 Facter.add(:puppetizer) do
   is_building = Puppet[:environment] == 'build'
   is_halting = Puppet[:environment] == 'halt'
+  is_booting = Puppet[:environment] == 'init'
 
   # is_halting = false
   # if !is_building
@@ -12,9 +13,10 @@ Facter.add(:puppetizer) do
 
   setcode do
     {
-      "building" => is_building,
-      "running" => !is_building && !is_halting,
-      "halting" => is_halting
+      "building"        => is_building,
+      "running"         => !is_building && !is_halting,
+      "halting"         => is_halting,
+      "initializing"    => is_booting,
     }
   end
 end

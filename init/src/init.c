@@ -47,7 +47,7 @@ static void init_detach_from_terminal()
     }
 }
 
-static pid_t init_apply()
+static pid_t init_apply(const char *mode)
 {
     if (is_applying) {
         log_warning("Ignoring apply request");
@@ -55,12 +55,23 @@ static pid_t init_apply()
     }
 
     is_applying = true;
-    apply_pid = spawn1(PUPPETIZER_APPLY);
+    apply_pid = spawn2(PUPPETIZER_APPLY, mode);
 
     if (apply_pid == -1) {
         fatal(ERROR_SPAWN_FAILED, "Failed to start puppet apply");
     }
     return apply_pid;
+}
+
+static void init_apply_kill()
+{
+    if (apply_pid > 0 && is_applying) {
+        log_warning("Stopping puppet apply");
+        kill(apply_pid, SIGINT);
+        waitpid(apply_pid, NULL, 0);
+        // make sure that apply is marked as stopped
+        is_applying = false;
+    }
 }
 
 static uint8_t init_get_state()
@@ -178,9 +189,12 @@ static void init_halt()
     
     log_debug("Running halt action");
 
+    // kill any running apply
+    init_apply_kill();
+
     if (use_puppet_when_halting) {
         // run puppet-apply with halt option to stop services
-        ret = spawn2_wait(PUPPETIZER_APPLY, "halt");
+        ret = spawn_wait_for_pid(init_apply("halt"));
         if (ret != 0) {
             log_error("Puppet halt failed with exitcode %d", ret);
         }
@@ -277,7 +291,7 @@ static void init_handle_signal(const struct signalfd_siginfo *info)
                 log_warning("Ignoring apply request");
             } else {
                 log_debug("Running apply");
-                init_apply();
+                init_apply(NULL);
             }
             break;
     }
@@ -422,9 +436,9 @@ __static status_t init_loop()
    return halt_cause;
 }
 
-static int init_boot()
+__static int init_boot()
 {
-    boot_pid = init_apply();
+    boot_pid = init_apply("init");
     if (boot_pid == -1) {
         fatal(ERROR_BOOT_FAILED, "Could not start boot script");
     }

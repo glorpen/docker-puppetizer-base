@@ -9,7 +9,7 @@
 
 #define LOG_MODULE "spawn"
 
-pid_t spawn2(const char *script, const char *arg)
+pid_t MOCKABLE(spawn2)(const char *script, const char *arg)
 {
     sigset_t no_signals;
     pid_t pid;
@@ -43,9 +43,13 @@ pid_t spawn1(const char *script)
 
 int spawn2_wait(const char *script, const char *arg)
 {
-    int stat;
     pid_t pid = spawn2(script, arg);
-    
+    return spawn_wait_for_pid(pid);
+}
+
+int spawn_wait_for_pid(pid_t pid)
+{
+    int stat;
     if (pid < 0) {
         return -1;
     }
