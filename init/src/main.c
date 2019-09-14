@@ -40,6 +40,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
                 arguments->log_level++;
             }
             break;
+        case 'h':
+            arguments->safe_halt = true;
+            break;
         case ARGP_KEY_ARG: 
             switch (state->arg_num) {
                 case 0:
