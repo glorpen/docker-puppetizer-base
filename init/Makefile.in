@@ -35,7 +35,7 @@ clean:
 	rm -rf $(BUILD_DIR) $(BUILD_TEST_DIR) test init init.static
 
 distclean: clean
-	rm -f Makefile
+	rm -f Makefile configure config.h config.status
 
 test: $(TEST_OBJECTS)
 	$(CC) $(TEST_OBJECTS) $(TEST_LDFLAGS) -o $@
