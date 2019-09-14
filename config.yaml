@@ -102,7 +102,7 @@ package_sets:
     yaml-cpp: 0.6.2
 
 builds:
-  version: "3.0.0"
+  version: "3.1.0"
   puppet-packages:
     5.5.10:
       "centos7":
