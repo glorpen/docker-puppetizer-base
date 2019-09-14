@@ -67,7 +67,7 @@ static void init_apply_kill()
 {
     if (apply_pid > 0 && is_applying) {
         log_warning("Stopping puppet apply");
-        kill(apply_pid, SIGINT);
+        kill(apply_pid, SIGTERM);
         waitpid(apply_pid, NULL, 0);
         // make sure that apply is marked as stopped
         is_applying = false;

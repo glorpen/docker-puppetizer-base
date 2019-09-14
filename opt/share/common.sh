@@ -32,11 +32,16 @@ puppet_apply()
 	else
 		debug_opts="--log_level warning"
 	fi
+
+	saved_traps=$(trap)
+	trap '{ kill -INT %1; }' TERM INT
 	
 	# apply puppet manifests and check for exit code
 	set +e
-	"${puppetizer_bin}/puppet" apply --detailed-exitcodes $debug_opts --environment=${env} "${puppetizer_init}"
+	"${puppetizer_bin}/puppet" apply --detailed-exitcodes $debug_opts --environment=${env} "${puppetizer_init}" &
+	wait
 	puppet_ret=$?
+	eval "$saved_traps"
 	set -e
 	
 	if [ $puppet_ret -eq 2 ] || [ $puppet_ret -eq 0 ];
