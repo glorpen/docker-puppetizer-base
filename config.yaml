@@ -10,6 +10,7 @@ sha256:
     6.5.0:  7eef940dba560084e618377912f6b440ddaa4194bd8d4078d985955faa16596e
     6.6.0:  1e8d44ac576d463ea209a2324386bfd891b7a3e997882a383bd1178bead3350f
     6.8.0:  f26b6fda6ffd5d7a351e491193085d1f7f7f1e9e5b48dbe345fcced88e2b6c80
+    6.10.0: d65b7e8f47222f93751ac114d17412f4da40eb0fadeac414a3f030199cc9551f
   facter:
     # curl -L https://github.com/puppetlabs/facter/archive/3.14.0.tar.gz | sha256sum -
     3.11.6: 6f015d27f53cbf0529925536f7c90029fdbb508bb69395fa313e84c80bfea420
@@ -17,6 +18,7 @@ sha256:
     3.14.0: 09eb12b9f68b5ff482cb85b707db563c7bdc135a729c945e66d2fbdb9680a7b8
     3.14.1: a837d4459c28977b8c8ad421a9cfab5f526ee635b8baa3b2131e396befcd82f6
     3.14.3: 15fdb5dfcf4743f14babd22d71be35c4b2d4c1d7c72907d54d728a46f766b928
+    3.14.5: 7c98e6434c8861ec26497285bfb29d7d1b19a8cae817c6bf794029e512cd6c69
   leatherman:
     # curl -L https://github.com/puppetlabs/leatherman/archive/1.7.0.tar.gz | sha256sum -
     1.5.4:  f4b777de15f89ee0f5db99d065ca96290559e91ceadee39671e0f68318c84f97
@@ -100,9 +102,19 @@ package_sets:
     cpp-hocon: 0.2.1
     boost: 1.69.0
     yaml-cpp: 0.6.2
-
+  6.10.0:
+    puppet:   6.10.0
+    facter:   3.14.5
+    hiera:    3.5.0 # no 3.6.0 available
+    ruby:     2.5.3
+    ruby_gems:    3.0.2
+    ruby_bundler: 1.17.3
+    leatherman: 1.7.0
+    cpp-hocon: 0.2.1
+    boost: 1.69.0
+    yaml-cpp: 0.6.2
 builds:
-  version: "3.1.0"
+  version: "3.2.0"
   puppet-packages:
     5.5.10:
       "centos7":
@@ -131,7 +143,7 @@ builds:
           - boost
           - yaml-cpp
 
-    6.6.0:
+    6.8.0:
       "centos7":
         source-image: centos:7.6.1810
         system: centos
@@ -164,18 +176,12 @@ builds:
           - boost
           - yaml-cpp
 
-    6.8.0:
+    6.10.0:
       "centos7":
         source-image: centos:7.6.1810
         system: centos
         system-version: 7.6.1810
         system-packages: []
-      "alpine3.9":
-        source-image: alpine:3.9
-        system: alpine
-        system-version: 3.9.99
-        system-packages:
-          - yaml-cpp
       "alpine3.10":
         source-image: alpine:3.10
         system: alpine
