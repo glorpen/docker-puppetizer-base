@@ -188,6 +188,12 @@ builds:
         system-version: 3.10.99
         system-packages:
           - yaml-cpp
+      "alpine3.12":
+        source-image: alpine:3.12
+        system: alpine
+        system-version: 3.12.99
+        system-packages:
+          - yaml-cpp
       "fedora30":
         source-image: fedora:30
         system: fedora

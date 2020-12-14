@@ -46,7 +46,7 @@ ruby
 yaml-dev
 zlib-dev
 {# other #}
-cmake g++ curl-dev
+cmake g++ curl-dev patch
 argp-standalone
 {% endset %}
 
@@ -67,11 +67,11 @@ RUN /opt/puppetizer/bin/puppet module install puppetlabs-apk --target-dir {{ ins
 {% endblock %}
 
 {% block build_facter_leatherman_cmake_options -%}
--DCMAKE_CXX_FLAGS_RELEASE="-Os {% if system_version >= v('3.9.0') %}-Wno-error=class-memaccess -Wno-error=ignored-qualifiers{% endif %}"
+-DCMAKE_CXX_FLAGS_RELEASE="-Os {% if system_version >= v('3.9.0') %}-Wno-error=class-memaccess -Wno-error=ignored-qualifiers{% endif %}{% if system_version >= v('3.12.0') %} -Wno-error=deprecated-copy{% endif %}"
 {%- endblock %}
 {% block build_facter_cpp_hocon_cmake_options -%}
 -DCMAKE_CXX_FLAGS_RELEASE="-Os -Wno-error=deprecated-declarations {% if system_version >= v('3.9.0') %}-Wno-error=catch-value={% endif %}"
 {%- endblock %}
 {% block build_facter_facter_cmake_options -%}
--DCMAKE_CXX_FLAGS_RELEASE="-Os -Wno-error=deprecated-declarations {% if system_version >= v('3.9.0') %}-Wno-error=catch-value={% endif %}"
+-DCMAKE_CXX_FLAGS_RELEASE="-Os -Wno-error=deprecated-declarations {% if system_version >= v('3.9.0') %}-Wno-error=catch-value={% endif %}{% if system_version >= v('3.12.0') %} -Wno-error=deprecated-copy{% endif %}"
 {%- endblock %}
